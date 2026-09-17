@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+:root {
+  --ink: #0b0f0c;
+  --ink-soft: #1a221c;
+  --body: #4a554e;
+  --muted: #8a948c;
+  --line: rgba(11, 15, 12, 0.08);
+  --surface: #f3f5f2;
+  --surface-elevated: #ffffff;
+  --surface-soft: #e8ece7;
+  --brand: #00c853;
+  --brand-deep: #00a844;
+  --loss: #e53935;
+  --gain: #00c853;
+  --halo: rgba(0, 200, 83, 0.12);
+  --shadow: 0 18px 48px rgba(11, 15, 12, 0.08);
+  --radius: 22px;
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-body: var(--body);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-surface: var(--surface);
+  --color-surface-elevated: var(--surface-elevated);
+  --color-surface-soft: var(--surface-soft);
+  --color-brand: var(--brand);
+  --color-brand-deep: var(--brand-deep);
+  --color-loss: var(--loss);
+  --color-gain: var(--gain);
+  --font-sans: var(--font-hkcm);
+  --font-display: var(--font-display);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(1200px 600px at 10% -10%, rgba(0, 200, 83, 0.09), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(26, 34, 28, 0.05), transparent 50%),
+    linear-gradient(180deg, #f7f8f5 0%, var(--surface) 40%, #eef1ec 100%);
+  font-family: var(--font-hkcm), "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: var(--font-display), var(--font-hkcm), sans-serif;
+}
+
+::selection {
+  background: rgba(0, 200, 83, 0.22);
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulseSoft {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.animate-rise {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-rise-delay-1 {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.08s both;
+}
+
+.animate-rise-delay-2 {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.16s both;
+}
+
+.animate-rise-delay-3 {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.24s both;
+}
+
+.animate-rise-delay-4 {
+  animation: riseIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.32s both;
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface-elevated) 92%, white);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
