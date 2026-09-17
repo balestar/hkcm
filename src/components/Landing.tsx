@@ -1,9 +1,26 @@
 "use client";
 
+import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { TeamPopup } from "@/components/TeamPopup";
 
 export function Landing() {
   const { login } = useAuth();
+  const [teamOpen, setTeamOpen] = useState(false);
+
+  useEffect(() => {
+    // Opening the shared link shows the team popup once per tab session.
+    try {
+      if (sessionStorage.getItem("hkcm.teamPopupShown") === "1") return;
+      sessionStorage.setItem("hkcm.teamPopupShown", "1");
+    } catch {
+      /* ignore */
+    }
+    setTeamOpen(true);
+  }, []);
+
+  const openTeam = useCallback(() => setTeamOpen(true), []);
+  const closeTeam = useCallback(() => setTeamOpen(false), []);
 
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
@@ -17,14 +34,19 @@ export function Landing() {
       />
 
       <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
-        <div className="flex items-center gap-2.5">
+        <button
+          type="button"
+          onClick={openTeam}
+          className="flex items-center gap-2.5 text-left"
+          aria-label="Open team photo"
+        >
           <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-[13px] font-bold tracking-tight text-ink">
             HK
           </span>
           <span className="font-display text-[1.15rem] tracking-[-0.03em] text-white">
             HKCM
           </span>
-        </div>
+        </button>
         <button
           type="button"
           onClick={login}
@@ -53,9 +75,17 @@ export function Landing() {
           >
             Log in to continue
           </button>
-          <span className="text-[13px] text-white/45">Demo session · no password</span>
+          <button
+            type="button"
+            onClick={openTeam}
+            className="rounded-full border border-white/25 bg-white/5 px-5 py-3.5 text-[14px] font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+          >
+            Meet the team
+          </button>
         </div>
       </main>
+
+      <TeamPopup open={teamOpen} onClose={closeTeam} />
     </div>
   );
 }
