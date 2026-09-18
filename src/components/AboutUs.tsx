@@ -31,9 +31,9 @@ function LinkedInBadge({ href }: { href: string }) {
 }
 
 export function AboutUs({ onBack }: { onBack: () => void }) {
-  const people = useMemo<ModalPerson[]>(
-    () => [
-      ...EXPERTS.map((e) => ({
+  const experts = useMemo<ModalPerson[]>(
+    () =>
+      EXPERTS.map((e) => ({
         id: e.id,
         name: e.name,
         role: e.role,
@@ -41,7 +41,12 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
         linkedin: e.linkedin,
         bio: e.bio,
       })),
-      ...TEAM.map((m) => ({
+    []
+  );
+
+  const team = useMemo<ModalPerson[]>(
+    () =>
+      TEAM.map((m) => ({
         id: m.id,
         name: m.name,
         role: m.role,
@@ -49,16 +54,11 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
         linkedin: m.linkedin,
         quote: m.quote,
       })),
-    ],
     []
   );
 
-  const [modalIndex, setModalIndex] = useState<number | null>(null);
-
-  const openPerson = (id: string) => {
-    const i = people.findIndex((p) => p.id === id);
-    if (i >= 0) setModalIndex(i);
-  };
+  const [expertIndex, setExpertIndex] = useState<number | null>(null);
+  const [teamIndex, setTeamIndex] = useState<number | null>(null);
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
@@ -145,6 +145,7 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </div>
         </section>
 
+        {/* Experts — tap opens one slideable modal */}
         <section className="mb-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
             Unsere Experten
@@ -153,12 +154,12 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
             Experience across market desks
           </h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {EXPERTS.map((e) => (
+            {EXPERTS.map((e, i) => (
               <button
                 key={e.id}
                 type="button"
-                onClick={() => openPerson(e.id)}
-                className="overflow-hidden rounded-[20px] border border-[#d8e0ec] bg-[#f4f6fa] text-left shadow-[0_16px_40px_rgba(5,12,28,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(5,12,28,0.28)]"
+                onClick={() => setExpertIndex(i)}
+                className="overflow-hidden rounded-[20px] border border-white/12 bg-white/[0.06] text-left transition hover:bg-white/[0.09]"
               >
                 <div className="relative aspect-[4/5] bg-[#0c1833]">
                   <Image
@@ -173,18 +174,16 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
                   <div className="absolute right-3 top-3">
                     <LinkedInBadge href={e.linkedin} />
                   </div>
-                  <h3 className="pr-10 text-[15px] font-bold text-ink">{e.name}</h3>
-                  <p className="mt-0.5 text-[12px] text-[#6b7c96]">{e.role}</p>
-                  <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-[#3d4f6a]">
-                    {e.bio}
-                  </p>
-                  <p className="mt-2 text-[12px] font-medium text-brand">mehr erfahren →</p>
+                  <h3 className="pr-10 text-[15px] font-bold text-white">{e.name}</h3>
+                  <p className="mt-0.5 text-[12px] text-white/45">{e.role}</p>
+                  <p className="mt-2 text-[12px] font-medium text-brand-soft">mehr erfahren →</p>
                 </div>
               </button>
             ))}
           </div>
         </section>
 
+        {/* Team — tap opens one slideable modal (separate from experts) */}
         <section className="mb-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
             Das Team hinter HKCM
@@ -193,32 +192,32 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
             Research, product, and markets — together
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            {TEAM.map((m) => (
+            {TEAM.map((m, i) => (
               <button
                 key={m.id}
                 type="button"
-                onClick={() => openPerson(m.id)}
-                className="relative rounded-[18px] border border-[#e2e8f0] bg-[#f7f8fb] p-4 text-left shadow-[0_10px_28px_rgba(5,12,28,0.14)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(5,12,28,0.2)]"
+                onClick={() => setTeamIndex(i)}
+                className="relative rounded-[18px] border border-white/12 bg-white/[0.06] p-4 text-left transition hover:bg-white/[0.09]"
               >
                 <div className="absolute right-3 top-3">
                   <LinkedInBadge href={m.linkedin} />
                 </div>
                 <div className="flex items-start gap-3 pr-8">
-                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white shadow-sm">
+                  <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-white/15">
                     <Image
                       src={m.image}
                       alt={m.name}
                       fill
-                      className="object-cover"
+                      className="object-cover object-top"
                       sizes="56px"
                     />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-[15px] font-bold text-ink">{m.name}</h3>
-                    <p className="text-[12px] text-[#6b7c96]">{m.role}</p>
+                    <h3 className="text-[15px] font-bold text-white">{m.name}</h3>
+                    <p className="text-[12px] text-white/45">{m.role}</p>
                   </div>
                 </div>
-                <p className="mt-3 text-[13px] leading-relaxed text-[#3d4f6a]">
+                <p className="mt-3 line-clamp-2 text-[13px] leading-relaxed text-white/60">
                   {m.quote}
                 </p>
               </button>
@@ -243,12 +242,23 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
         </section>
       </main>
 
-      {modalIndex != null && (
+      {expertIndex != null && (
         <TeamMemberModal
-          people={people}
-          index={modalIndex}
-          onClose={() => setModalIndex(null)}
-          onChange={setModalIndex}
+          people={experts}
+          index={expertIndex}
+          onClose={() => setExpertIndex(null)}
+          onChange={setExpertIndex}
+          variant="portrait"
+        />
+      )}
+
+      {teamIndex != null && (
+        <TeamMemberModal
+          people={team}
+          index={teamIndex}
+          onClose={() => setTeamIndex(null)}
+          onChange={setTeamIndex}
+          variant="avatar"
         />
       )}
     </div>

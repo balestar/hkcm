@@ -12,6 +12,10 @@ import {
   type ChartAnalysis,
 } from "@/lib/landingContent";
 import { randomDeskComment, type DummyPlatform } from "@/lib/dummyFeed";
+import {
+  TeamMemberModal,
+  type ModalPerson,
+} from "@/components/TeamMemberModal";
 
 function AnalysisChart({
   values,
@@ -139,6 +143,7 @@ function DeskCommentsFeed() {
       return { ...c, uid: `s-${i}`, ago: `${i + 1}m` };
     })
   );
+  const [modalIndex, setModalIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const id = window.setInterval(() => {
@@ -155,39 +160,69 @@ function DeskCommentsFeed() {
     return () => window.clearInterval(id);
   }, []);
 
+  const modalPeople: ModalPerson[] = items.map((c) => ({
+    id: c.uid,
+    name: c.name,
+    role: c.handle,
+    image: c.avatar,
+    linkedin: c.linkedin || "https://www.linkedin.com/company/hkcm",
+    quote: c.text,
+  }));
+
   return (
-    <ul className="space-y-3">
-      {items.map((c, idx) => (
-        <li
-          key={c.uid}
-          className={`flex gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3.5 shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm ${
-            idx === 0 ? "animate-rise" : ""
-          }`}
-        >
-          <div className="relative shrink-0">
-            <div className="relative h-11 w-11 overflow-hidden rounded-full ring-1 ring-white/15">
-              <Image src={c.avatar} alt="" fill className="object-cover object-top" sizes="44px" />
-            </div>
-            <span className="absolute -bottom-0.5 -right-0.5">
-              <PlatformBadge platform={c.platform} linkedin={c.linkedin} />
-            </span>
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-              <span className="text-[14px] font-semibold text-white">{c.name}</span>
-              <span className="text-[12px] text-white/40">{c.handle}</span>
-              <span className="text-[12px] text-white/30">· {c.ago}</span>
-            </div>
-            <p className="mt-1.5 text-[13px] leading-relaxed text-white/72">{c.text}</p>
-          </div>
-          <span
-            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-              c.tone === "bull" ? "bg-gain" : c.tone === "bear" ? "bg-loss" : "bg-white/35"
-            }`}
-          />
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-3">
+        {items.map((c, idx) => (
+          <li key={c.uid}>
+            <button
+              type="button"
+              onClick={() => setModalIndex(idx)}
+              className={`flex w-full gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm transition hover:bg-white/[0.09] ${
+                idx === 0 ? "animate-rise" : ""
+              }`}
+            >
+              <div className="relative shrink-0">
+                <div className="relative h-11 w-11 overflow-hidden rounded-full ring-1 ring-white/15">
+                  <Image
+                    src={c.avatar}
+                    alt=""
+                    fill
+                    className="object-cover object-top"
+                    sizes="44px"
+                  />
+                </div>
+                <span className="absolute -bottom-0.5 -right-0.5">
+                  <PlatformBadge platform={c.platform} linkedin={c.linkedin} />
+                </span>
+              </div>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  <span className="text-[14px] font-semibold text-white">{c.name}</span>
+                  <span className="text-[12px] text-white/40">{c.handle}</span>
+                  <span className="text-[12px] text-white/30">· {c.ago}</span>
+                </div>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-white/72">{c.text}</p>
+              </div>
+              <span
+                className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                  c.tone === "bull" ? "bg-gain" : c.tone === "bear" ? "bg-loss" : "bg-white/35"
+                }`}
+              />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {modalIndex != null && (
+        <TeamMemberModal
+          people={modalPeople}
+          index={modalIndex}
+          onClose={() => setModalIndex(null)}
+          onChange={setModalIndex}
+          variant="avatar"
+        />
+      )}
+    </>
   );
 }
 

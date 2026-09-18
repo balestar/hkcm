@@ -28,16 +28,19 @@ function LinkedInBadge({ href }: { href: string }) {
   );
 }
 
+/** Single slideable profile modal — experts, team, or LinkedIn comments. */
 export function TeamMemberModal({
   people,
   index,
   onClose,
   onChange,
+  variant = "portrait",
 }: {
   people: ModalPerson[];
   index: number;
   onClose: () => void;
   onChange: (index: number) => void;
+  variant?: "portrait" | "avatar";
 }) {
   const person = people[index];
   const go = useCallback(
@@ -57,21 +60,20 @@ export function TeamMemberModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [go, onClose]);
 
-  // touch swipe
   const [touchX, setTouchX] = useState<number | null>(null);
 
   if (!person) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#050b18]/72 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#050b18]/75 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-label={person.name}
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg overflow-hidden rounded-[22px] border border-[#d8e0ec] bg-[#f4f6fa] shadow-[0_28px_80px_rgba(5,12,28,0.45)]"
+        className="relative w-full max-w-lg overflow-hidden rounded-[22px] border border-white/10 bg-[#0c1830] shadow-[0_28px_80px_rgba(5,12,28,0.55)]"
         onClick={(e) => e.stopPropagation()}
         onTouchStart={(e) => setTouchX(e.changedTouches[0]?.clientX ?? null)}
         onTouchEnd={(e) => {
@@ -85,56 +87,89 @@ export function TeamMemberModal({
         <button
           type="button"
           onClick={onClose}
-          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/35 text-white backdrop-blur-sm transition hover:bg-black/50"
+          className="absolute right-3 top-3 z-10 grid h-9 w-9 place-items-center rounded-full bg-black/40 text-white backdrop-blur-sm transition hover:bg-black/55"
           aria-label="Close"
         >
           ×
         </button>
 
-        <div className="relative aspect-[4/5] max-h-[52vh] w-full bg-[#0c1833]">
-          <Image
-            src={person.image}
-            alt={person.name}
-            fill
-            className="object-cover object-top"
-            sizes="512px"
-            priority
-          />
-          <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+        {variant === "portrait" ? (
+          <div className="relative aspect-[4/5] max-h-[52vh] w-full bg-[#07101f]">
+            <Image
+              src={person.image}
+              alt={person.name}
+              fill
+              className="object-cover object-top"
+              sizes="512px"
+              priority
+            />
+            <div className="absolute inset-y-0 left-0 flex items-center pl-2">
+              <button
+                type="button"
+                onClick={() => go(-1)}
+                className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink shadow transition hover:bg-white"
+                aria-label="Previous"
+              >
+                ‹
+              </button>
+            </div>
+            <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+              <button
+                type="button"
+                onClick={() => go(1)}
+                className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink shadow transition hover:bg-white"
+                aria-label="Next"
+              >
+                ›
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="relative flex items-center justify-center gap-4 bg-[#07101f] px-6 py-10">
             <button
               type="button"
               onClick={() => go(-1)}
-              className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink shadow transition hover:bg-white"
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
               aria-label="Previous"
             >
               ‹
             </button>
-          </div>
-          <div className="absolute inset-y-0 right-0 flex items-center pr-2">
+            <div className="relative h-28 w-28 overflow-hidden rounded-full ring-2 ring-white/20">
+              <Image
+                src={person.image}
+                alt={person.name}
+                fill
+                className="object-cover object-top"
+                sizes="112px"
+                priority
+              />
+            </div>
             <button
               type="button"
               onClick={() => go(1)}
-              className="grid h-10 w-10 place-items-center rounded-full bg-white/90 text-ink shadow transition hover:bg-white"
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"
               aria-label="Next"
             >
               ›
             </button>
           </div>
-        </div>
+        )}
 
         <div className="px-5 py-5">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-display text-[1.35rem] tracking-[-0.03em] text-ink">
+              <h3 className="font-display text-[1.35rem] tracking-[-0.03em] text-white">
                 {person.name}
               </h3>
-              <p className="mt-0.5 text-[13px] text-[#6b7c96]">{person.role}</p>
+              <p className="mt-0.5 text-[13px] text-white/50">{person.role}</p>
             </div>
             <LinkedInBadge href={person.linkedin} />
           </div>
-          <p className="mt-3 text-[14px] leading-relaxed text-[#3d4f6a]">
-            {person.bio || person.quote}
-          </p>
+          {(person.bio || person.quote) && (
+            <p className="mt-3 text-[14px] leading-relaxed text-white/70">
+              {person.bio || person.quote}
+            </p>
+          )}
           <div className="mt-4 flex items-center justify-center gap-1.5">
             {people.map((p, i) => (
               <button
@@ -143,13 +178,13 @@ export function TeamMemberModal({
                 aria-label={`Show ${p.name}`}
                 onClick={() => onChange(i)}
                 className={`h-1.5 rounded-full transition-all ${
-                  i === index ? "w-5 bg-brand" : "w-1.5 bg-[#c5cfde]"
+                  i === index ? "w-5 bg-brand" : "w-1.5 bg-white/25"
                 }`}
               />
             ))}
           </div>
-          <p className="mt-3 text-center text-[11px] text-[#8494ad]">
-            {index + 1} / {people.length} · swipe or use arrows
+          <p className="mt-3 text-center text-[11px] text-white/35">
+            {index + 1} / {people.length}
           </p>
         </div>
       </div>
