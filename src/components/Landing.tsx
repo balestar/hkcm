@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
+import { AboutUs } from "@/components/AboutUs";
 import {
   HEADLINE_NEWS,
   CHART_ANALYSES,
@@ -126,6 +127,7 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
         name: "u/TapeWatcher",
         handle: "r/Daytrading",
         initials: "TW",
+        avatar: "/comments/tapewatcher.png",
         tone: "bull",
         platform: "reddit",
         text: "Breakout holds above the session VWAP — watching volume confirm.",
@@ -136,6 +138,7 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
         name: "Omar S.",
         handle: "@omarflows",
         initials: "OS",
+        avatar: "/comments/omar.png",
         tone: "neutral",
         platform: "twitter",
         text: "ECB speakers later — keep size light into the headline risk.",
@@ -146,6 +149,7 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
         name: "Greta M.",
         handle: "@greta",
         initials: "GM",
+        avatar: "/comments/greta.png",
         tone: "bear",
         platform: "hkcm",
         text: "Still fade strength into resistance until the 20d reclaim sticks.",
@@ -156,6 +160,7 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
         name: "Lena Hoffmann",
         handle: "@lena_hkcm",
         initials: "LH",
+        avatar: "/comments/lena.png",
         tone: "bull",
         platform: "lh",
         text: "Philip’s DAX read aligns with desk flow — exporters still bid.",
@@ -193,8 +198,8 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
           }`}
         >
           <div className="relative shrink-0">
-            <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-brand/40 to-ink/80 text-[12px] font-bold text-white ring-1 ring-white/15">
-              {c.initials}
+            <div className="relative h-10 w-10 overflow-hidden rounded-full ring-1 ring-white/15">
+              <Image src={c.avatar} alt="" fill className="object-cover" sizes="40px" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5">
               <PlatformIcon platform={c.platform} />
@@ -299,8 +304,14 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
         </div>
 
         <div className="m-4 mt-1 flex gap-3 rounded-2xl border border-[#dce3ef] bg-white/70 px-4 py-3.5 sm:m-5">
-          <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-brand to-brand-deep text-[13px] font-bold text-white ring-2 ring-brand/20">
-            {chart.analyst.initials}
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-brand/20">
+            <Image
+              src={chart.analyst.avatar}
+              alt={chart.analyst.name}
+              fill
+              className="object-cover"
+              sizes="48px"
+            />
           </div>
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
@@ -336,10 +347,14 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
 
 export function Landing() {
   const { login } = useAuth();
+  const [tab, setTab] = useState<"markets" | "about">("markets");
+
+  if (tab === "about") {
+    return <AboutUs onBack={() => setTab("markets")} />;
+  }
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
-      {/* Layered professional atmosphere — not flat blue */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -371,7 +386,7 @@ export function Landing() {
         className="pointer-events-none absolute -right-24 top-10 h-96 w-96 rounded-full bg-brand/25 blur-3xl motion-safe:animate-[pulseSoft_4s_ease-in-out_infinite]"
       />
 
-      <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
+      <header className="relative z-10 flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
         <Image
           src="/logo-hkcm-light.png"
           alt="HKCM"
@@ -380,6 +395,22 @@ export function Landing() {
           className="h-8 w-auto"
           priority
         />
+        <nav className="flex items-center gap-1 rounded-full border border-white/12 bg-white/[0.06] p-1 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setTab("markets")}
+            className="rounded-full bg-white px-3.5 py-1.5 text-[13px] font-semibold text-ink"
+          >
+            Markets
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("about")}
+            className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-white/75 transition hover:text-white"
+          >
+            About us
+          </button>
+        </nav>
         <button
           type="button"
           onClick={() => void login()}
@@ -401,13 +432,22 @@ export function Landing() {
             Top finance headlines, sliding chart analysis, and a live multi-platform
             feed — then connect when you’re ready.
           </p>
-          <button
-            type="button"
-            onClick={() => void login()}
-            className="mt-7 rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_32px_rgba(59,110,245,0.35)] transition hover:bg-brand-deep"
-          >
-            Connect wallet
-          </button>
+          <div className="mt-7 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => void login()}
+              className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_32px_rgba(59,110,245,0.35)] transition hover:bg-brand-deep"
+            >
+              Connect wallet
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("about")}
+              className="rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-[15px] font-semibold text-white transition hover:bg-white/10"
+            >
+              About us
+            </button>
+          </div>
         </section>
 
         <section className="animate-rise-delay-1 mb-8">

@@ -14,6 +14,7 @@ export type LiveComment = {
   name: string;
   handle: string;
   initials: string;
+  avatar: string;
   text: string;
   ago: string;
   tone: "bull" | "bear" | "neutral";
@@ -34,6 +35,7 @@ export type ChartAnalysis = {
     role: string;
     badge: string;
     initials: string;
+    avatar: string;
     comment: string;
   };
 };
@@ -95,9 +97,10 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
     ],
     analyst: {
       name: "Philip Hopf",
-      role: "Senior market strategist",
+      role: "Gründer & Gesellschafter",
       badge: "HKCM",
       initials: "PH",
+      avatar: "/team/philip-hopf-avatar.png",
       comment:
         "Buyers defended the morning pullback and reclaimed the session mid. As long as we hold above the early base, dips still look constructive into the US open — watch volume on the next push.",
     },
@@ -118,12 +121,13 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       97440, 97280, 97420, 97420,
     ],
     analyst: {
-      name: "Maya Chen",
-      role: "Digital assets analyst",
-      badge: "HKCM Crypto",
-      initials: "MC",
+      name: "Philip Klinkmüller",
+      role: "Gründer & CEO",
+      badge: "HKCM Charts",
+      initials: "PK",
+      avatar: "/team/analyst-philip-k.png",
       comment:
-        "ETF creations keep the bid under the tape. Funding is calm and the 24h higher-low structure is intact — I’d rather buy shallow dips than chase the spike into New York.",
+        "ETF creations keep the bid under the tape. The 24h higher-low structure is intact — prefer buying shallow dips over chasing the spike into New York.",
     },
   },
   {
@@ -142,10 +146,11 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       248.4, 248.7, 248.6, 248.6,
     ],
     analyst: {
-      name: "Tobias Keller",
-      role: "Equity research",
-      badge: "HKCM Stocks",
-      initials: "TK",
+      name: "Fredrik Martens",
+      role: "Chief Strategy Officer",
+      badge: "HKCM Strategy",
+      initials: "FM",
+      avatar: "/team/analyst-fredrik.png",
       comment:
         "Software leadership is carrying the DAX. SAP held the open gap and buyers stepped in on every shallow fade — momentum looks healthy while Europe stays risk-on.",
     },
@@ -166,17 +171,17 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       1.0836, 1.0838, 1.0841, 1.0843, 1.0840, 1.0838, 1.0842, 1.0842,
     ],
     analyst: {
-      name: "Elena Vargas",
-      role: "FX strategist",
-      badge: "HKCM FX",
-      initials: "EV",
+      name: "Emre Şentürk",
+      role: "Chief Operating Officer",
+      badge: "HKCM Desk",
+      initials: "ES",
+      avatar: "/team/analyst-emre.png",
       comment:
-        "Euro softens on the open, which is a quiet tailwind for exporters. Until US data clears, I treat bounces as sells — range still favors a grind lower.",
+        "Euro softens on the open — a quiet tailwind for exporters. Until US data clears, treat bounces as sells; the range still favors a grind lower.",
     },
   },
 ];
 
-/** @deprecated use CHART_ANALYSES[0] */
 export const CHART_ANALYSIS = CHART_ANALYSES[0];
 
 export const LIVE_COMMENTS: LiveComment[] = [
@@ -185,6 +190,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "Lena Hoffmann",
     handle: "@lena_hkcm",
     initials: "LH",
+    avatar: "/comments/lena.png",
     ago: "1m",
     tone: "bull",
     platform: "lh",
@@ -195,6 +201,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "u/EuroTape",
     handle: "r/EuroInvesting",
     initials: "ET",
+    avatar: "/comments/eurotape.png",
     ago: "3m",
     tone: "bull",
     platform: "reddit",
@@ -205,6 +212,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "Jonas R.",
     handle: "@jonasdesk",
     initials: "JR",
+    avatar: "/comments/jonas.png",
     ago: "5m",
     tone: "neutral",
     platform: "twitter",
@@ -215,6 +223,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "Amira T.",
     handle: "@amira",
     initials: "AT",
+    avatar: "/comments/amira.png",
     ago: "8m",
     tone: "bull",
     platform: "hkcm",
@@ -225,6 +234,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "u/MacroNode",
     handle: "r/MarketAnalysis",
     initials: "MN",
+    avatar: "/comments/macronode.png",
     ago: "12m",
     tone: "bear",
     platform: "reddit",
@@ -235,6 +245,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "Felix W.",
     handle: "@felixflows",
     initials: "FW",
+    avatar: "/comments/felix.png",
     ago: "16m",
     tone: "bull",
     platform: "twitter",
@@ -245,6 +256,7 @@ export const LIVE_COMMENTS: LiveComment[] = [
     name: "Sofia L.",
     handle: "@sofia",
     initials: "SL",
+    avatar: "/comments/sofia.png",
     ago: "21m",
     tone: "neutral",
     platform: "hkcm",
