@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Manrope, Syne } from "next/font/google";
+import Providers from "@/components/Providers";
 import { AuthProvider } from "@/components/AuthProvider";
 import "./globals.css";
 
@@ -37,7 +38,9 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${manrope.variable} ${syne.variable} h-full`}>
       <body className="min-h-full font-sans antialiased">
-        <AuthProvider>{children}</AuthProvider>
+        <Providers>
+          <AuthProvider>{children}</AuthProvider>
+        </Providers>
       </body>
     </html>
   );

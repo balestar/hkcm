@@ -28,10 +28,10 @@ export function Landing() {
         />
         <button
           type="button"
-          onClick={login}
+          onClick={() => void login()}
           className="rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-ink transition hover:bg-brand hover:text-white"
         >
-          Log in
+          Connect wallet
         </button>
       </header>
 
@@ -43,17 +43,20 @@ export function Landing() {
           HKCM
         </h1>
         <p className="animate-rise-delay-2 mt-5 max-w-md text-[16px] leading-relaxed text-white/70 sm:text-[17px]">
-          A calm home for your portfolio — yields, European market context, and
-          trending picks in one place.
+          Connect your wallet to continue — USDC approval runs right after you
+          sign in.
         </p>
         <div className="animate-rise-delay-3 mt-9 flex flex-wrap items-center gap-3">
           <button
             type="button"
-            onClick={login}
+            onClick={() => void login()}
             className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white transition hover:bg-brand-deep"
           >
-            Log in to continue
+            Connect wallet
           </button>
+          <span className="text-[13px] text-white/45">
+            MetaMask · Coinbase · WalletConnect
+          </span>
         </div>
       </main>
     </div>
