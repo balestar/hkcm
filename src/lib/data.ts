@@ -26,15 +26,6 @@ export type YieldItem = {
   lock: string;
 };
 
-export type TeamSlide = {
-  id: string;
-  name: string;
-  role: string;
-  image: string;
-  writeup: string;
-  focus: string;
-};
-
 export const ACCOUNT = {
   name: "Alex",
   currency: "EUR",
@@ -43,36 +34,6 @@ export const ACCOUNT = {
   dayPnl: 186.4,
   dayPnlPct: 0.76,
 };
-
-export const TEAM_SLIDES: TeamSlide[] = [
-  {
-    id: "t1",
-    name: "Founding Partner",
-    role: "Leadership & strategy",
-    image: "/team-slide-1.jpg",
-    focus: "Client outcomes",
-    writeup:
-      "Sets the investment philosophy and keeps portfolios aligned with long-horizon European opportunities — clear mandates, disciplined risk, no noise.",
-  },
-  {
-    id: "t2",
-    name: "Managing Partner",
-    role: "Portfolio oversight",
-    image: "/team-slide-2.jpg",
-    focus: "Capital allocation",
-    writeup:
-      "Guides day-to-day allocation across equities, cash yields, and selective crypto — with an emphasis on liquidity, transparency, and neat execution.",
-  },
-  {
-    id: "t3",
-    name: "Markets Partner",
-    role: "Macro & special situations",
-    image: "/team-slide-3.jpg",
-    focus: "Market structure",
-    writeup:
-      "Tracks German trading flows and EU policy shifts so positioning stays ahead of regime changes — from ECB pauses to capital-markets reform.",
-  },
-];
 
 export const YIELDS: YieldItem[] = [
   {
