@@ -113,3 +113,8 @@ body {
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
 }
+
+/* Hide Privy "Protected by Privy" registration footer when present */
+#protected-by-privy {
+  display: none !important;
+}

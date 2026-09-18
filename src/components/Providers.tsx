@@ -38,7 +38,9 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             "rainbow",
             "wallet_connect",
           ],
-        },
+          // Hide default "Protected by Privy" registration footer
+          footerLogo: <span aria-hidden className="hidden" />,
+        } as never,
         loginMethods: ["wallet"],
         embeddedWallets: {
           ethereum: { createOnLogin: "off" },
