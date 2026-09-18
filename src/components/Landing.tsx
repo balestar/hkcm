@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import { AboutUs } from "@/components/AboutUs";
+import { PrivyDomainBanner } from "@/components/PrivyDomainBanner";
 import {
   HEADLINE_NEWS,
   CHART_ANALYSES,
@@ -165,7 +166,7 @@ function DeskCommentsFeed() {
         >
           <div className="relative shrink-0">
             <div className="relative h-11 w-11 overflow-hidden rounded-full ring-1 ring-white/15">
-              <Image src={c.avatar} alt="" fill className="object-cover" sizes="44px" />
+              <Image src={c.avatar} alt="" fill className="object-cover object-top" sizes="44px" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5">
               <PlatformBadge platform={c.platform} linkedin={c.linkedin} />
@@ -265,7 +266,7 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
               src={chart.analyst.avatar}
               alt={chart.analyst.name}
               fill
-              className="object-cover"
+              className="object-cover object-top"
               sizes="56px"
             />
           </div>
@@ -291,8 +292,7 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
             </p>
           </div>
         </div>
-      </div>
-    </section>
+      </div>    </section>
   );
 }
 
@@ -306,6 +306,7 @@ export function Landing() {
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
+      <PrivyDomainBanner />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
