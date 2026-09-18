@@ -19,8 +19,9 @@ export type TeamMember = {
 
 export const TEAM_VIDEO = {
   title: "Unser Team",
-  embedUrl:
-    "https://iframe.mediadelivery.net/embed/369702/59b0353f-7982-468a-baa3-b581c04f6d22?autoplay=false&loop=false&muted=false&preload=true&responsive=true",
+  /** Proxied via /api/team-video — Bunny locks direct CDN to hkcm.com referrers. */
+  playlistPath: "playlist.m3u8",
+  poster: "/video/unser-team-poster.jpg",
   source: "https://hkcm.com/ueber-uns",
 };
 
@@ -51,8 +52,8 @@ export const EXPERTS: Expert[] = [
     id: "philip-h",
     name: "Philip Hopf",
     role: "Gründer & Gesellschafter",
-    image: "/team/philip-hopf.png",
-    cutout: "/team/philip-hopf.png",
+    image: "/team/philip-hopf-src.jpg",
+    cutout: "/team/philip-hopf-src.jpg",
     linkedin: "https://www.linkedin.com/company/hkcm",
     bio: "Public markets communication and media positioning. Makes complex capital-market themes clear for private investors.",
   },

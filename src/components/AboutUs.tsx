@@ -9,6 +9,7 @@ import {
   TEAM,
   TEAM_VIDEO,
 } from "@/lib/aboutContent";
+import { TeamVideoPlayer } from "@/components/TeamVideoPlayer";
 
 function LinkedInBadge({ href }: { href: string }) {
   return (
@@ -81,24 +82,8 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </p>
         </section>
 
-        {/* Team video */}
-        <section className="animate-rise-delay-1 mb-12 overflow-hidden rounded-[22px] border border-white/12 bg-black/40 shadow-[0_24px_60px_rgba(5,12,28,0.35)]">
-          <div className="relative aspect-video w-full bg-[#0a1428]">
-            <iframe
-              src={TEAM_VIDEO.embedUrl}
-              title={TEAM_VIDEO.title}
-              className="absolute inset-0 h-full w-full border-0"
-              allow="accelerometer; gyroscope; autoplay; encrypted-media; picture-in-picture"
-              allowFullScreen
-              loading="lazy"
-            />
-          </div>
-          <div className="flex items-center justify-between gap-3 border-t border-white/10 px-5 py-3.5">
-            <p className="font-display text-[1.1rem] tracking-[-0.02em] text-white">
-              {TEAM_VIDEO.title}
-            </p>
-            <span className="text-[12px] text-white/45">HKCM team film</span>
-          </div>
+        <section className="animate-rise-delay-1 mb-12">
+          <TeamVideoPlayer />
         </section>
 
         {/* Stats */}

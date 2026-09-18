@@ -7,18 +7,18 @@ export type HeadlineNews = {
   time: string;
 };
 
-export type CommentPlatform = "reddit" | "twitter" | "hkcm" | "lh";
+export type CommentPlatform = "linkedin" | "twitter" | "reddit" | "hkcm";
 
-export type LiveComment = {
+export type DeskComment = {
   id: string;
   name: string;
   handle: string;
   initials: string;
   avatar: string;
   text: string;
-  ago: string;
-  tone: "bull" | "bear" | "neutral";
   platform: CommentPlatform;
+  linkedin?: string;
+  tone: "bull" | "bear" | "neutral";
 };
 
 export type ChartAnalysis = {
@@ -29,6 +29,7 @@ export type ChartAnalysis = {
   subtitle: string;
   price: string;
   changePct: number;
+  /** Base series — runtime randomizes around this path */
   values: number[];
   analyst: {
     name: string;
@@ -36,6 +37,7 @@ export type ChartAnalysis = {
     badge: string;
     initials: string;
     avatar: string;
+    linkedin: string;
     comment: string;
   };
 };
@@ -79,6 +81,18 @@ export const HEADLINE_NEWS: HeadlineNews[] = [
   },
 ];
 
+/** Randomize a chart series around a base path for live feel. */
+export function randomizeSeries(base: number[], jitterPct = 0.0045): number[] {
+  let v = base[0];
+  return base.map((target, i) => {
+    const noise = 1 + (Math.random() * 2 - 1) * jitterPct;
+    const pull = 0.35;
+    v = v * (1 - pull) + target * pull * noise;
+    if (i === 0) v = target;
+    return Math.round(v * (v > 100 ? 1 : 10000)) / (v > 100 ? 1 : 10000);
+  });
+}
+
 export const CHART_ANALYSES: ChartAnalysis[] = [
   {
     id: "dax",
@@ -101,6 +115,7 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       badge: "HKCM",
       initials: "PH",
       avatar: "/team/philip-hopf-avatar.png",
+      linkedin: "https://www.linkedin.com/company/hkcm",
       comment:
         "Buyers defended the morning pullback and reclaimed the session mid. As long as we hold above the early base, dips still look constructive into the US open — watch volume on the next push.",
     },
@@ -126,6 +141,7 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       badge: "HKCM Charts",
       initials: "PK",
       avatar: "/team/analyst-philip-k.png",
+      linkedin: "https://www.linkedin.com/company/hkcm",
       comment:
         "ETF creations keep the bid under the tape. The 24h higher-low structure is intact — prefer buying shallow dips over chasing the spike into New York.",
     },
@@ -151,6 +167,7 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       badge: "HKCM Strategy",
       initials: "FM",
       avatar: "/team/analyst-fredrik.png",
+      linkedin: "https://www.linkedin.com/company/hkcm",
       comment:
         "Software leadership is carrying the DAX. SAP held the open gap and buyers stepped in on every shallow fade — momentum looks healthy while Europe stays risk-on.",
     },
@@ -176,6 +193,7 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
       badge: "HKCM Desk",
       initials: "ES",
       avatar: "/team/analyst-emre.png",
+      linkedin: "https://www.linkedin.com/company/hkcm",
       comment:
         "Euro softens on the open — a quiet tailwind for exporters. Until US data clears, treat bounces as sells; the range still favors a grind lower.",
     },
@@ -184,82 +202,144 @@ export const CHART_ANALYSES: ChartAnalysis[] = [
 
 export const CHART_ANALYSIS = CHART_ANALYSES[0];
 
-export const LIVE_COMMENTS: LiveComment[] = [
+/** Real HKCM team voices for the desk feed — LinkedIn where available. */
+export const DESK_COMMENT_POOL: DeskComment[] = [
   {
-    id: "c1",
-    name: "Lena Hoffmann",
-    handle: "@lena_hkcm",
-    initials: "LH",
-    avatar: "/comments/lena.png",
-    ago: "1m",
+    id: "t1",
+    name: "Philip Hopf",
+    handle: "Gründer & Gesellschafter",
+    initials: "PH",
+    avatar: "/team/philip-hopf-avatar.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/company/hkcm",
     tone: "bull",
-    platform: "lh",
-    text: "Agree with Philip — DAX structure is clean. Holding the morning base keeps me long bias into the US open.",
+    text: "DAX structure is clean. Holding the morning base keeps a constructive bias into the US open.",
   },
   {
-    id: "c2",
-    name: "u/EuroTape",
-    handle: "r/EuroInvesting",
-    initials: "ET",
-    avatar: "/comments/eurotape.png",
-    ago: "3m",
+    id: "t2",
+    name: "Philip Klinkmüller",
+    handle: "Gründer & CEO",
+    initials: "PK",
+    avatar: "/team/analyst-philip-k.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/company/hkcm",
     tone: "bull",
-    platform: "reddit",
-    text: "Exporters carrying the tape — SAP and Siemens bids look sticky on the Frankfurt open.",
+    text: "Charttechnik first: reclaim of the session mid matters more than the headline noise.",
   },
   {
-    id: "c3",
-    name: "Jonas R.",
-    handle: "@jonasdesk",
-    initials: "JR",
-    avatar: "/comments/jonas.png",
-    ago: "5m",
+    id: "t3",
+    name: "Murat Örs, CFTe",
+    handle: "Technischer Analyst",
+    initials: "MÖ",
+    avatar: "/team/murat-oers.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/in/murat-oers/?locale=en",
     tone: "neutral",
-    platform: "twitter",
-    text: "Bunds quiet. No need to chase until the US data window clears.",
+    text: "Analyse means clarity from structure — not chasing every tick into resistance.",
   },
   {
-    id: "c4",
-    name: "Amira T.",
-    handle: "@amira",
-    initials: "AT",
-    avatar: "/comments/amira.png",
-    ago: "8m",
+    id: "t4",
+    name: "Stefan Dölken",
+    handle: "IT-Teamleiter",
+    initials: "SD",
+    avatar: "/team/stefan-doelken.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/in/stefandoelken/",
+    tone: "neutral",
+    text: "Systems and markets both reward discipline — keep risk defined into the data window.",
+  },
+  {
+    id: "t5",
+    name: "Verena Möhring",
+    handle: "Senior Marketing Manager",
+    initials: "VM",
+    avatar: "/team/verena-moehring.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/in/verena-m%C3%B6hring-460359201/",
     tone: "bull",
-    platform: "hkcm",
-    text: "Desk flow still constructive in EU cyclicals. Watching Stoxx 600 for confirmation.",
+    text: "Clear communication beats noise — exporters leading the open is the story to explain.",
   },
   {
-    id: "c5",
-    name: "u/MacroNode",
-    handle: "r/MarketAnalysis",
-    initials: "MN",
-    avatar: "/comments/macronode.png",
-    ago: "12m",
+    id: "t6",
+    name: "Ramon Marquart",
+    handle: "Senior Social Media Manager",
+    initials: "RM",
+    avatar: "/team/ramon-marquart.png",
+    platform: "twitter",
+    linkedin: "https://www.linkedin.com/in/ramonmarquart/",
+    tone: "bull",
+    text: "EU open risk-on showing up across feeds — SAP and Siemens still sticky on the tape.",
+  },
+  {
+    id: "t7",
+    name: "Amir Soufi",
+    handle: "Creative Director",
+    initials: "AS",
+    avatar: "/team/amir-soufi.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/in/mramirsoufi/",
+    tone: "neutral",
+    text: "Markets move fast — good analysis still has to be readable in one glance.",
+  },
+  {
+    id: "t8",
+    name: "Julian Marco Angele",
+    handle: "Teamleiter Marketing & Vertrieb",
+    initials: "JA",
+    avatar: "/team/julian-angele.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/in/julian-marco-angele-8a0742379/",
+    tone: "bull",
+    text: "Desk stays constructive while cyclicals hold — people and process over noise.",
+  },
+  {
+    id: "t9",
+    name: "Manuel Horning",
+    handle: "Senior Backendentwickler",
+    initials: "MH",
+    avatar: "/team/manuel-horning.png",
+    platform: "hkcm",
+    linkedin: "https://www.linkedin.com/in/manuel-horning-298475289/",
+    tone: "neutral",
+    text: "Stable infra, stable process — same standard we apply to research delivery.",
+  },
+  {
+    id: "t10",
+    name: "Sebastian Tölle",
+    handle: "Senior Infrastrukturentwickler",
+    initials: "ST",
+    avatar: "/team/sebastian-toelle.png",
+    platform: "hkcm",
+    linkedin: "https://www.linkedin.com/company/hkcm",
     tone: "bear",
-    platform: "reddit",
-    text: "If DAX loses the open low, I’d step aside — not fighting the first break.",
+    text: "If DAX loses the open low, step aside — infrastructure and trading both hate blind risk.",
   },
   {
-    id: "c6",
-    name: "Felix W.",
-    handle: "@felixflows",
-    initials: "FW",
-    avatar: "/comments/felix.png",
-    ago: "16m",
-    tone: "bull",
-    platform: "twitter",
-    text: "BTC correlating with risk-on in the EU open. Funding still calm.",
-  },
-  {
-    id: "c7",
-    name: "Sofia L.",
-    handle: "@sofia",
-    initials: "SL",
-    avatar: "/comments/sofia.png",
-    ago: "21m",
+    id: "t11",
+    name: "Emre Şentürk",
+    handle: "Chief Operating Officer",
+    initials: "ES",
+    avatar: "/team/analyst-emre.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/company/hkcm",
     tone: "neutral",
-    platform: "hkcm",
-    text: "EURUSD grinding lower helping exporters. Cross-asset still orderly.",
+    text: "EURUSD softer on the open — operational focus stays on process, not prediction.",
+  },
+  {
+    id: "t12",
+    name: "Fredrik Martens",
+    handle: "Chief Strategy Officer",
+    initials: "FM",
+    avatar: "/team/analyst-fredrik.png",
+    platform: "linkedin",
+    linkedin: "https://www.linkedin.com/company/hkcm",
+    tone: "bull",
+    text: "Software leadership carrying Frankfurt — strategy stays long-term while the tape cooperates.",
   },
 ];
+
+/** @deprecated */
+export const LIVE_COMMENTS = DESK_COMMENT_POOL.map((c, i) => ({
+  ...c,
+  ago: `${(i + 1) * 2}m`,
+}));

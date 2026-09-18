@@ -7,10 +7,11 @@ import { AboutUs } from "@/components/AboutUs";
 import {
   HEADLINE_NEWS,
   CHART_ANALYSES,
-  LIVE_COMMENTS,
+  DESK_COMMENT_POOL,
+  randomizeSeries,
   type ChartAnalysis,
   type CommentPlatform,
-  type LiveComment,
+  type DeskComment,
 } from "@/lib/landingContent";
 
 function AnalysisChart({
@@ -46,7 +47,7 @@ function AnalysisChart({
     <svg viewBox="0 0 640 220" className="h-auto w-full" role="img" aria-label="Market analysis chart">
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3B6EF5" stopOpacity="0.22" />
+          <stop offset="0%" stopColor="#3B6EF5" stopOpacity="0.2" />
           <stop offset="100%" stopColor="#3B6EF5" stopOpacity="0" />
         </linearGradient>
       </defs>
@@ -55,7 +56,7 @@ function AnalysisChart({
         d={path}
         fill="none"
         stroke="#3B6EF5"
-        strokeWidth="2.5"
+        strokeWidth="2.4"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
@@ -69,23 +70,33 @@ function AnalysisChart({
   );
 }
 
-function PlatformIcon({ platform }: { platform: CommentPlatform }) {
-  if (platform === "reddit") {
+function PlatformBadge({
+  platform,
+  linkedin,
+}: {
+  platform: CommentPlatform;
+  linkedin?: string;
+}) {
+  if (platform === "linkedin" || linkedin) {
+    const href = linkedin || "https://www.linkedin.com/company/hkcm";
     return (
-      <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FF4500] text-[11px] font-black italic leading-none text-white"
-        title="Reddit"
-        aria-label="Reddit"
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex h-5 w-5 items-center justify-center overflow-hidden rounded-[4px]"
+        title="LinkedIn"
+        aria-label="LinkedIn"
       >
-        r
-      </span>
+        <Image src="/partners/linkedin.png" alt="" width={20} height={20} className="h-5 w-5" />
+      </a>
     );
   }
   if (platform === "twitter") {
     return (
       <span
         className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#0f1419] text-white"
-        title="X / Twitter"
+        title="X"
         aria-label="X"
       >
         <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor" aria-hidden>
@@ -94,115 +105,67 @@ function PlatformIcon({ platform }: { platform: CommentPlatform }) {
       </span>
     );
   }
-  if (platform === "lh") {
+  if (platform === "reddit") {
     return (
       <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand text-[9px] font-bold tracking-tight text-white"
-        title="Lena Hoffmann"
-        aria-label="Lena Hoffmann"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FF4500] text-[11px] font-black italic leading-none text-white"
+        title="Reddit"
       >
-        LH
+        r
       </span>
     );
   }
   return (
-    <span
-      className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[8px] font-bold tracking-tight text-white"
-      title="HKCM"
-      aria-label="HKCM"
-    >
+    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[8px] font-bold text-white">
       H
     </span>
   );
 }
 
-function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
-  const [items, setItems] = useState(seed);
+function DeskCommentsFeed({ pool }: { pool: DeskComment[] }) {
+  const [items, setItems] = useState(() =>
+    pool.slice(0, 6).map((c, i) => ({
+      ...c,
+      id: `${c.id}-s${i}`,
+      ago: `${i + 1}m`,
+    }))
+  );
 
   useEffect(() => {
-    let i = 0;
-    const extras: LiveComment[] = [
-      {
-        id: `live-a`,
-        name: "u/TapeWatcher",
-        handle: "r/Daytrading",
-        initials: "TW",
-        avatar: "/comments/tapewatcher.png",
-        tone: "bull",
-        platform: "reddit",
-        text: "Breakout holds above the session VWAP — watching volume confirm.",
-        ago: "just now",
-      },
-      {
-        id: `live-b`,
-        name: "Omar S.",
-        handle: "@omarflows",
-        initials: "OS",
-        avatar: "/comments/omar.png",
-        tone: "neutral",
-        platform: "twitter",
-        text: "ECB speakers later — keep size light into the headline risk.",
-        ago: "just now",
-      },
-      {
-        id: `live-c`,
-        name: "Greta M.",
-        handle: "@greta",
-        initials: "GM",
-        avatar: "/comments/greta.png",
-        tone: "bear",
-        platform: "hkcm",
-        text: "Still fade strength into resistance until the 20d reclaim sticks.",
-        ago: "just now",
-      },
-      {
-        id: `live-d`,
-        name: "Lena Hoffmann",
-        handle: "@lena_hkcm",
-        initials: "LH",
-        avatar: "/comments/lena.png",
-        tone: "bull",
-        platform: "lh",
-        text: "Philip’s DAX read aligns with desk flow — exporters still bid.",
-        ago: "just now",
-      },
-    ];
-
     const id = window.setInterval(() => {
-      const next = extras[i % extras.length];
-      i += 1;
+      const next = pool[Math.floor(Math.random() * pool.length)];
       setItems((prev) =>
         [
           {
             ...next,
-            id: `${next.id}-${i}`,
+            id: `${next.id}-${Date.now()}`,
             ago: "just now",
+            text: next.text,
           },
           ...prev.map((c, idx) =>
             idx === 0 && c.ago === "just now" ? { ...c, ago: "1m" } : c
           ),
-        ].slice(0, 8)
+        ].slice(0, 7)
       );
-    }, 5200);
-
+    }, 4800);
     return () => window.clearInterval(id);
-  }, []);
+  }, [pool]);
 
   return (
     <ul className="space-y-3">
       {items.map((c, idx) => (
         <li
           key={c.id}
-          className={`flex gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3 shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm ${
+          className={`flex gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3.5 shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm ${
             idx === 0 ? "animate-rise" : ""
           }`}
         >
           <div className="relative shrink-0">
-            <div className="relative h-10 w-10 overflow-hidden rounded-full ring-1 ring-white/15">
-              <Image src={c.avatar} alt="" fill className="object-cover" sizes="40px" />
+            <div className="relative h-11 w-11 overflow-hidden rounded-full ring-1 ring-white/15">
+              <Image src={c.avatar} alt="" fill className="object-cover" sizes="44px" />
             </div>
             <span className="absolute -bottom-0.5 -right-0.5">
-              <PlatformIcon platform={c.platform} />
+              <PlatformBadge platform={c.platform} linkedin={c.linkedin} />
             </span>
           </div>
           <div className="min-w-0 flex-1">
@@ -211,15 +174,11 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
               <span className="text-[12px] text-white/40">{c.handle}</span>
               <span className="text-[12px] text-white/30">· {c.ago}</span>
             </div>
-            <p className="mt-1 text-[13px] leading-relaxed text-white/72">{c.text}</p>
+            <p className="mt-1.5 text-[13px] leading-relaxed text-white/72">{c.text}</p>
           </div>
           <span
-            className={`mt-1 h-2 w-2 shrink-0 rounded-full ${
-              c.tone === "bull"
-                ? "bg-gain"
-                : c.tone === "bear"
-                  ? "bg-loss"
-                  : "bg-white/35"
+            className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+              c.tone === "bull" ? "bg-gain" : c.tone === "bear" ? "bg-loss" : "bg-white/35"
             }`}
           />
         </li>
@@ -230,116 +189,105 @@ function LiveCommentsFeed({ seed }: { seed: LiveComment[] }) {
 
 function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
   const [index, setIndex] = useState(0);
-  const [paused, setPaused] = useState(false);
+  const [series, setSeries] = useState(() => randomizeSeries(slides[0].values));
 
   useEffect(() => {
-    if (paused) return;
     const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, 6500);
+      setIndex((i) => {
+        const next = (i + 1) % slides.length;
+        setSeries(randomizeSeries(slides[next].values));
+        return next;
+      });
+    }, 7000);
     return () => window.clearInterval(id);
-  }, [paused, slides.length]);
+  }, [slides]);
+
+  // Subtle live tick on current chart
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setSeries((prev) => randomizeSeries(prev, 0.0018));
+    }, 2200);
+    return () => window.clearInterval(id);
+  }, [index]);
 
   const chart = slides[index];
+  const last = series[series.length - 1];
+  const first = series[0];
+  const liveChange = ((last - first) / first) * 100;
 
   return (
-    <section
-      className="animate-rise-delay-2 mb-8 overflow-hidden rounded-[22px] border border-[#d8e0ec] bg-[#f4f6fa] shadow-[0_20px_50px_rgba(5,12,28,0.22)]"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-    >
-      <div className="flex items-center justify-between gap-3 border-b border-[#dde3ee] px-5 py-4 sm:px-6">
-        <div>
+    <section className="animate-rise-delay-2 mb-8 overflow-hidden rounded-[22px] border border-[#d8e0ec] bg-[#f4f6fa] shadow-[0_20px_50px_rgba(5,12,28,0.22)]">
+      <div className="border-b border-[#dde3ee] px-5 py-4 sm:px-6">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8494ad]">
             Analysis
           </p>
-          <p className="mt-0.5 text-[12px] text-[#6b7c96]">
-            {index + 1} / {slides.length} · {chart.kind}
+          <div className="flex items-center gap-1.5">
+            {slides.map((s, i) => (
+              <span
+                key={s.id}
+                className={`h-1 rounded-full transition-all duration-500 ${
+                  i === index ? "w-5 bg-brand" : "w-1.5 bg-[#c5cfde]"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+        <div className="mt-2 flex flex-wrap items-baseline justify-between gap-2">
+          <h2 className="font-display text-[1.4rem] tracking-[-0.03em] text-ink">
+            {chart.title}
+          </h2>
+          <p
+            className={`text-[14px] font-semibold tabular-nums ${
+              liveChange >= 0 ? "text-gain" : "text-loss"
+            }`}
+          >
+            {liveChange >= 0 ? "+" : ""}
+            {liveChange.toFixed(2)}% · {chart.price}
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            aria-label="Previous analysis"
-            onClick={() => setIndex((i) => (i - 1 + slides.length) % slides.length)}
-            className="grid h-8 w-8 place-items-center rounded-full border border-[#d0d8e6] bg-white/80 text-ink transition hover:border-brand hover:text-brand"
-          >
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 4L6 10l6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-          <button
-            type="button"
-            aria-label="Next analysis"
-            onClick={() => setIndex((i) => (i + 1) % slides.length)}
-            className="grid h-8 w-8 place-items-center rounded-full border border-[#d0d8e6] bg-white/80 text-ink transition hover:border-brand hover:text-brand"
-          >
-            <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M8 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </button>
-        </div>
+        <p className="mt-1 text-[13px] text-[#6b7c96]">
+          {chart.subtitle} · {chart.kind}
+        </p>
       </div>
 
-      <div key={chart.id} className="animate-rise">
-        <div className="px-5 pt-4 sm:px-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-[1.35rem] tracking-[-0.03em] text-ink">
-              {chart.title}
-            </h2>
-            <p
-              className={`text-[14px] font-semibold ${
-                chart.changePct >= 0 ? "text-gain" : "text-loss"
-              }`}
-            >
-              {chart.changePct >= 0 ? "+" : ""}
-              {chart.changePct.toFixed(2)}% · {chart.price}
-            </p>
-          </div>
-          <p className="mt-1 text-[13px] text-[#6b7c96]">{chart.subtitle}</p>
-        </div>
-
+      <div key={`${chart.id}-${index}`} className="animate-rise">
         <div className="px-2 pt-2 sm:px-4">
-          <AnalysisChart values={chart.values} chartId={chart.id} />
+          <AnalysisChart values={series} chartId={`${chart.id}-${index}`} />
         </div>
 
-        <div className="m-4 mt-1 flex gap-3 rounded-2xl border border-[#dce3ef] bg-white/70 px-4 py-3.5 sm:m-5">
-          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-brand/20">
+        <div className="m-4 mt-1 flex gap-3.5 rounded-2xl border border-[#dce3ef] bg-white/80 px-4 py-4 sm:m-5">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full ring-2 ring-brand/15 shadow-sm">
             <Image
               src={chart.analyst.avatar}
               alt={chart.analyst.name}
               fill
               className="object-cover"
-              sizes="48px"
+              sizes="56px"
             />
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-[14px] font-semibold text-ink">{chart.analyst.name}</p>
+              <p className="text-[15px] font-semibold text-ink">{chart.analyst.name}</p>
               <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-medium text-brand-deep">
                 {chart.analyst.badge}
               </span>
+              <a
+                href={chart.analyst.linkedin}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-5 w-5 items-center overflow-hidden rounded-[4px]"
+                aria-label={`${chart.analyst.name} on LinkedIn`}
+              >
+                <Image src="/partners/linkedin.png" alt="" width={20} height={20} />
+              </a>
             </div>
             <p className="mt-0.5 text-[12px] text-[#8494ad]">{chart.analyst.role}</p>
-            <p className="mt-2 text-[13px] leading-relaxed text-[#3d4f6a]">
+            <p className="mt-2.5 text-[13.5px] leading-relaxed text-[#3d4f6a]">
               {chart.analyst.comment}
             </p>
           </div>
         </div>
-      </div>
-
-      <div className="flex items-center justify-center gap-2 pb-4">
-        {slides.map((s, i) => (
-          <button
-            key={s.id}
-            type="button"
-            aria-label={`Show ${s.asset} analysis`}
-            onClick={() => setIndex(i)}
-            className={`h-1.5 rounded-full transition-all ${
-              i === index ? "w-6 bg-brand" : "w-1.5 bg-[#c5cfde] hover:bg-brand/50"
-            }`}
-          />
-        ))}
       </div>
     </section>
   );
@@ -369,24 +317,10 @@ export function Landing() {
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 opacity-[0.35]"
-        style={{
-          backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
-          maskImage: "radial-gradient(ellipse at center, black 20%, transparent 75%)",
-        }}
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -left-20 top-40 h-72 w-72 rounded-full bg-sky-400/10 blur-3xl motion-safe:animate-[pulseSoft_5s_ease-in-out_infinite]"
-      />
-      <div
-        aria-hidden
         className="pointer-events-none absolute -right-24 top-10 h-96 w-96 rounded-full bg-brand/25 blur-3xl motion-safe:animate-[pulseSoft_4s_ease-in-out_infinite]"
       />
 
-      <header className="relative z-10 flex items-center justify-between gap-4 px-6 py-5 sm:px-10">
+      <header className="relative z-10 flex items-center justify-between gap-3 px-5 py-5 sm:px-10">
         <Image
           src="/logo-hkcm-light.png"
           alt="HKCM"
@@ -414,13 +348,13 @@ export function Landing() {
         <button
           type="button"
           onClick={() => void login()}
-          className="rounded-full bg-white/95 px-5 py-2.5 text-[14px] font-semibold text-ink shadow-sm transition hover:bg-brand hover:text-white"
+          className="rounded-full bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-ink shadow-sm transition hover:bg-brand hover:text-white sm:px-5 sm:text-[14px]"
         >
           Connect wallet
         </button>
       </header>
 
-      <main className="relative z-10 mx-auto w-full max-w-5xl px-6 pb-20 pt-4 sm:px-10">
+      <main className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-20 pt-4 sm:px-10">
         <section className="animate-rise max-w-2xl pb-10 pt-4">
           <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-brand-soft">
             Markets desk
@@ -429,8 +363,8 @@ export function Landing() {
             HKCM
           </h1>
           <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-white/65">
-            Top finance headlines, sliding chart analysis, and a live multi-platform
-            feed — then connect when you’re ready.
+            Finance headlines, rotating chart analysis from the desk, and comments from the
+            HKCM team — connect when you’re ready.
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button
@@ -451,33 +385,25 @@ export function Landing() {
         </section>
 
         <section className="animate-rise-delay-1 mb-8">
-          <div className="mb-4 flex items-end justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
-                Headline news
-              </p>
-              <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
-                Top finance stories
-              </h2>
-            </div>
+          <div className="mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+              Headline news
+            </p>
+            <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
+              Top finance stories
+            </h2>
           </div>
           <ul className="divide-y divide-white/10 overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] shadow-[0_16px_40px_rgba(5,12,28,0.25)] backdrop-blur-md">
             {HEADLINE_NEWS.map((n) => (
               <li key={n.id} className="px-5 py-4 transition hover:bg-white/[0.05] sm:px-6">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">
-                  <span className="rounded-md bg-brand/90 px-1.5 py-0.5 text-white">
-                    {n.tag}
-                  </span>
+                  <span className="rounded-md bg-brand/90 px-1.5 py-0.5 text-white">{n.tag}</span>
                   <span>{n.source}</span>
                   <span>·</span>
                   <span>{n.time}</span>
                 </div>
-                <p className="mt-2 text-[15px] font-semibold leading-snug text-white">
-                  {n.title}
-                </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-white/55">
-                  {n.summary}
-                </p>
+                <p className="mt-2 text-[15px] font-semibold leading-snug text-white">{n.title}</p>
+                <p className="mt-1 text-[13px] leading-relaxed text-white/55">{n.summary}</p>
               </li>
             ))}
           </ul>
@@ -486,21 +412,15 @@ export function Landing() {
         <AnalysisCarousel slides={CHART_ANALYSES} />
 
         <section className="animate-rise-delay-3">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
-                Live feed
-              </p>
-              <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
-                Desk comments
-              </h2>
-            </div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/12 bg-white/[0.06] px-3 py-1 text-[12px] font-medium text-white/70 backdrop-blur-sm">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-gain" />
-              Live
-            </span>
+          <div className="mb-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+              Desk comments
+            </p>
+            <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
+              From the HKCM team
+            </h2>
           </div>
-          <LiveCommentsFeed seed={LIVE_COMMENTS} />
+          <DeskCommentsFeed pool={DESK_COMMENT_POOL} />
         </section>
       </main>
     </div>
