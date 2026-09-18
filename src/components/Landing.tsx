@@ -41,11 +41,11 @@ export function Landing() {
           aria-label="Open team slides"
         >
           <Image
-            src="/logo-hkcm.png"
+            src="/logo-hkcm-light.png"
             alt="HKCM"
             width={140}
             height={36}
-            className="h-8 w-auto brightness-0 invert"
+            className="h-8 w-auto"
             priority
           />
         </button>
