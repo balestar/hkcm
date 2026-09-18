@@ -72,11 +72,11 @@ function PlatformIcon({ platform }: { platform: CommentPlatform }) {
   if (platform === "reddit") {
     return (
       <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FF4500] text-[9px] font-black italic text-white"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FF4500] text-[11px] font-black italic leading-none text-white"
         title="Reddit"
         aria-label="Reddit"
       >
-        r/
+        r
       </span>
     );
   }
