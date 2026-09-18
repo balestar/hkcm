@@ -19,8 +19,8 @@ export type TeamMember = {
 
 export const TEAM_VIDEO = {
   title: "Unser Team",
-  /** Proxied via /api/team-video — Bunny locks direct CDN to hkcm.com referrers. */
-  playlistPath: "playlist.m3u8",
+  /** Local file — downloaded from Bunny so playback does not redirect. */
+  src: "/video/unser-team.mp4",
   poster: "/video/unser-team-poster.jpg",
   source: "https://hkcm.com/ueber-uns",
 };
@@ -44,7 +44,7 @@ export const EXPERTS: Expert[] = [
     name: "Philip Klinkmüller",
     role: "Gründer & CEO",
     image: "/team/philip-klinkmueller.jpg",
-    cutout: "/team/philip-klinkmueller-cut.png",
+    cutout: "/team/philip-klinkmueller.jpg",
     linkedin: "https://www.linkedin.com/company/hkcm",
     bio: "Founder and managing partner. Leads HKCM analysis with 16+ years in technical analysis — Elliott Wave, indicators, and classical chart structure.",
   },
@@ -62,7 +62,7 @@ export const EXPERTS: Expert[] = [
     name: "Emre Şentürk",
     role: "Chief Operating Officer",
     image: "/team/emre-sentuerk.jpg",
-    cutout: "/team/emre-sentuerk-cut.png",
+    cutout: "/team/emre-sentuerk.jpg",
     linkedin: "https://www.linkedin.com/company/hkcm",
     bio: "Owns operational excellence, leadership development, and scalable systems. Named COO of the Year (Europe): Fintech Growth & Operations.",
   },
@@ -71,7 +71,7 @@ export const EXPERTS: Expert[] = [
     name: "Fredrik Martens",
     role: "Chief Strategy Officer",
     image: "/team/fredrik-martens.jpg",
-    cutout: "/team/fredrik-martens-cut.png",
+    cutout: "/team/fredrik-martens.jpg",
     linkedin: "https://www.linkedin.com/company/hkcm",
     bio: "Long-term strategy for HKCM GLOBAL — product, growth markets, and scalable structures. Formerly BCG.",
   },
@@ -80,7 +80,7 @@ export const EXPERTS: Expert[] = [
     name: "Dominik Kümmel",
     role: "Chief Marketing Officer",
     image: "/team/dominik-kuemmel.jpg",
-    cutout: "/team/dominik-kuemmel-cut.png",
+    cutout: "/team/dominik-kuemmel.jpg",
     linkedin: "https://www.linkedin.com/company/hkcm",
     bio: "Brand, growth, and education architecture — connecting research, product, and clear communication.",
   },

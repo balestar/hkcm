@@ -7,12 +7,10 @@ import { AboutUs } from "@/components/AboutUs";
 import {
   HEADLINE_NEWS,
   CHART_ANALYSES,
-  DESK_COMMENT_POOL,
   randomizeSeries,
   type ChartAnalysis,
-  type CommentPlatform,
-  type DeskComment,
 } from "@/lib/landingContent";
+import { randomDeskComment, type DummyPlatform } from "@/lib/dummyFeed";
 
 function AnalysisChart({
   values,
@@ -74,10 +72,10 @@ function PlatformBadge({
   platform,
   linkedin,
 }: {
-  platform: CommentPlatform;
+  platform: DummyPlatform;
   linkedin?: string;
 }) {
-  if (platform === "linkedin" || linkedin) {
+  if (platform === "linkedin") {
     const href = linkedin || "https://www.linkedin.com/company/hkcm";
     return (
       <a
@@ -90,6 +88,17 @@ function PlatformBadge({
       >
         <Image src="/partners/linkedin.png" alt="" width={20} height={20} className="h-5 w-5" />
       </a>
+    );
+  }
+  if (platform === "nft") {
+    return (
+      <span
+        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-cyan-400 text-[8px] font-black text-white"
+        title="NFT profile"
+        aria-label="NFT"
+      >
+        NFT
+      </span>
     );
   }
   if (platform === "twitter") {
@@ -122,40 +131,34 @@ function PlatformBadge({
   );
 }
 
-function DeskCommentsFeed({ pool }: { pool: DeskComment[] }) {
+function DeskCommentsFeed() {
   const [items, setItems] = useState(() =>
-    pool.slice(0, 6).map((c, i) => ({
-      ...c,
-      id: `${c.id}-s${i}`,
-      ago: `${i + 1}m`,
-    }))
+    Array.from({ length: 7 }, (_, i) => {
+      const c = randomDeskComment(i * 97 + 3);
+      return { ...c, uid: `s-${i}`, ago: `${i + 1}m` };
+    })
   );
 
   useEffect(() => {
     const id = window.setInterval(() => {
-      const next = pool[Math.floor(Math.random() * pool.length)];
+      const next = randomDeskComment();
       setItems((prev) =>
         [
-          {
-            ...next,
-            id: `${next.id}-${Date.now()}`,
-            ago: "just now",
-            text: next.text,
-          },
+          { ...next, uid: `${next.id}-${Date.now()}`, ago: "just now" },
           ...prev.map((c, idx) =>
             idx === 0 && c.ago === "just now" ? { ...c, ago: "1m" } : c
           ),
-        ].slice(0, 7)
+        ].slice(0, 8)
       );
-    }, 4800);
+    }, 4200);
     return () => window.clearInterval(id);
-  }, [pool]);
+  }, []);
 
   return (
     <ul className="space-y-3">
       {items.map((c, idx) => (
         <li
-          key={c.id}
+          key={c.uid}
           className={`flex gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3.5 shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm ${
             idx === 0 ? "animate-rise" : ""
           }`}
@@ -417,10 +420,10 @@ export function Landing() {
               Desk comments
             </p>
             <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
-              From the HKCM team
+              Market conversation
             </h2>
           </div>
-          <DeskCommentsFeed pool={DESK_COMMENT_POOL} />
+          <DeskCommentsFeed />
         </section>
       </main>
     </div>

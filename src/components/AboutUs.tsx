@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import {
   ABOUT_STATS,
@@ -7,9 +8,12 @@ import {
   METHOD_PILLARS,
   PARTNERS,
   TEAM,
-  TEAM_VIDEO,
 } from "@/lib/aboutContent";
 import { TeamVideoPlayer } from "@/components/TeamVideoPlayer";
+import {
+  TeamMemberModal,
+  type ModalPerson,
+} from "@/components/TeamMemberModal";
 
 function LinkedInBadge({ href }: { href: string }) {
   return (
@@ -17,6 +21,7 @@ function LinkedInBadge({ href }: { href: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
       className="inline-flex h-7 w-7 items-center justify-center rounded-md transition hover:opacity-90"
       aria-label="LinkedIn"
     >
@@ -26,6 +31,35 @@ function LinkedInBadge({ href }: { href: string }) {
 }
 
 export function AboutUs({ onBack }: { onBack: () => void }) {
+  const people = useMemo<ModalPerson[]>(
+    () => [
+      ...EXPERTS.map((e) => ({
+        id: e.id,
+        name: e.name,
+        role: e.role,
+        image: e.image,
+        linkedin: e.linkedin,
+        bio: e.bio,
+      })),
+      ...TEAM.map((m) => ({
+        id: m.id,
+        name: m.name,
+        role: m.role,
+        image: m.image,
+        linkedin: m.linkedin,
+        quote: m.quote,
+      })),
+    ],
+    []
+  );
+
+  const [modalIndex, setModalIndex] = useState<number | null>(null);
+
+  const openPerson = (id: string) => {
+    const i = people.findIndex((p) => p.id === id);
+    if (i >= 0) setModalIndex(i);
+  };
+
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
       <div
@@ -69,16 +103,7 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </h1>
           <p className="mt-4 max-w-2xl text-[16px] leading-relaxed text-white/65">
             Founded by analysts who invest themselves. Our methodology was built
-            at the markets — not in a textbook. Details from{" "}
-            <a
-              href={TEAM_VIDEO.source}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-brand-soft underline-offset-2 hover:underline"
-            >
-              hkcm.com/ueber-uns
-            </a>
-            .
+            at the markets — not in a textbook.
           </p>
         </section>
 
@@ -86,7 +111,6 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           <TeamVideoPlayer />
         </section>
 
-        {/* Stats */}
         <section className="animate-rise-delay-2 mb-12 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {ABOUT_STATS.map((s) => (
             <div
@@ -101,7 +125,6 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           ))}
         </section>
 
-        {/* Method */}
         <section className="mb-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
             Our approach
@@ -122,7 +145,6 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </div>
         </section>
 
-        {/* Experts */}
         <section className="mb-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
             Unsere Experten
@@ -132,13 +154,15 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </h2>
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {EXPERTS.map((e) => (
-              <article
+              <button
                 key={e.id}
-                className="overflow-hidden rounded-[20px] border border-[#d8e0ec] bg-[#f4f6fa] shadow-[0_16px_40px_rgba(5,12,28,0.2)]"
+                type="button"
+                onClick={() => openPerson(e.id)}
+                className="overflow-hidden rounded-[20px] border border-[#d8e0ec] bg-[#f4f6fa] text-left shadow-[0_16px_40px_rgba(5,12,28,0.2)] transition hover:-translate-y-0.5 hover:shadow-[0_20px_48px_rgba(5,12,28,0.28)]"
               >
-                <div className="relative aspect-[4/5] bg-gradient-to-b from-[#1a2d52] to-[#0c1833]">
+                <div className="relative aspect-[4/5] bg-[#0c1833]">
                   <Image
-                    src={e.cutout}
+                    src={e.image}
                     alt={e.name}
                     fill
                     className="object-cover object-top"
@@ -151,14 +175,16 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
                   </div>
                   <h3 className="pr-10 text-[15px] font-bold text-ink">{e.name}</h3>
                   <p className="mt-0.5 text-[12px] text-[#6b7c96]">{e.role}</p>
-                  <p className="mt-2 text-[13px] leading-relaxed text-[#3d4f6a]">{e.bio}</p>
+                  <p className="mt-2 line-clamp-3 text-[13px] leading-relaxed text-[#3d4f6a]">
+                    {e.bio}
+                  </p>
+                  <p className="mt-2 text-[12px] font-medium text-brand">mehr erfahren →</p>
                 </div>
-              </article>
+              </button>
             ))}
           </div>
         </section>
 
-        {/* Team cards */}
         <section className="mb-12">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
             Das Team hinter HKCM
@@ -168,9 +194,11 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             {TEAM.map((m) => (
-              <article
+              <button
                 key={m.id}
-                className="relative rounded-[18px] border border-[#e2e8f0] bg-[#f7f8fb] p-4 shadow-[0_10px_28px_rgba(5,12,28,0.14)]"
+                type="button"
+                onClick={() => openPerson(m.id)}
+                className="relative rounded-[18px] border border-[#e2e8f0] bg-[#f7f8fb] p-4 text-left shadow-[0_10px_28px_rgba(5,12,28,0.14)] transition hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(5,12,28,0.2)]"
               >
                 <div className="absolute right-3 top-3">
                   <LinkedInBadge href={m.linkedin} />
@@ -193,16 +221,13 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
                 <p className="mt-3 text-[13px] leading-relaxed text-[#3d4f6a]">
                   {m.quote}
                 </p>
-              </article>
+              </button>
             ))}
           </div>
         </section>
 
-        {/* Partners */}
         <section className="rounded-[22px] border border-white/10 bg-[#0a1630]/80 px-6 py-8 text-center">
-          <p className="text-[13px] font-medium text-white/50">
-            In Zusammenarbeit mit
-          </p>
+          <p className="text-[13px] font-medium text-white/50">In Zusammenarbeit mit</p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-10">
             {PARTNERS.map((p) => (
               <Image
@@ -217,6 +242,15 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           </div>
         </section>
       </main>
+
+      {modalIndex != null && (
+        <TeamMemberModal
+          people={people}
+          index={modalIndex}
+          onClose={() => setModalIndex(null)}
+          onChange={setModalIndex}
+        />
+      )}
     </div>
   );
 }
