@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import { TeamPopup } from "@/components/TeamPopup";
 
@@ -9,7 +10,6 @@ export function Landing() {
   const [teamOpen, setTeamOpen] = useState(false);
 
   useEffect(() => {
-    // Opening the shared link shows the team popup once per tab session.
     try {
       if (sessionStorage.getItem("hkcm.teamPopupShown") === "1") return;
       sessionStorage.setItem("hkcm.teamPopupShown", "1");
@@ -26,38 +26,40 @@ export function Landing() {
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_20%,rgba(0,200,83,0.16),transparent_50%),linear-gradient(160deg,#0b0f0c_0%,#152018_45%,#0f1611_100%)]"
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_70%_15%,rgba(59,110,245,0.28),transparent_52%),linear-gradient(160deg,#07122b_0%,#0d1f45_48%,#102a5c_100%)]"
       />
       <div
         aria-hidden
-        className="pointer-events-none absolute -right-24 top-24 h-80 w-80 rounded-full bg-brand/20 blur-3xl motion-safe:animate-[pulseSoft_4s_ease-in-out_infinite]"
+        className="pointer-events-none absolute -right-24 top-20 h-80 w-80 rounded-full bg-brand/25 blur-3xl motion-safe:animate-[pulseSoft_4s_ease-in-out_infinite]"
       />
 
       <header className="relative z-10 flex items-center justify-between px-6 py-5 sm:px-10">
         <button
           type="button"
           onClick={openTeam}
-          className="flex items-center gap-2.5 text-left"
-          aria-label="Open team photo"
+          className="flex items-center gap-3 text-left"
+          aria-label="Open team slides"
         >
-          <span className="grid h-9 w-9 place-items-center rounded-xl bg-brand text-[13px] font-bold tracking-tight text-ink">
-            HK
-          </span>
-          <span className="font-display text-[1.15rem] tracking-[-0.03em] text-white">
-            HKCM
-          </span>
+          <Image
+            src="/logo-hkcm.png"
+            alt="HKCM"
+            width={140}
+            height={36}
+            className="h-8 w-auto brightness-0 invert"
+            priority
+          />
         </button>
         <button
           type="button"
           onClick={login}
-          className="rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-ink transition hover:bg-brand"
+          className="rounded-full bg-white px-5 py-2.5 text-[14px] font-semibold text-ink transition hover:bg-brand hover:text-white"
         >
           Log in
         </button>
       </header>
 
       <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col justify-center px-6 pb-16 pt-8 sm:px-10">
-        <p className="animate-rise text-[13px] font-semibold uppercase tracking-[0.18em] text-brand">
+        <p className="animate-rise text-[13px] font-semibold uppercase tracking-[0.18em] text-brand-soft">
           Investing, clarified
         </p>
         <h1 className="animate-rise-delay-1 mt-4 max-w-2xl font-display text-[3.1rem] leading-[0.95] tracking-[-0.045em] text-white sm:text-[4.4rem]">
@@ -71,7 +73,7 @@ export function Landing() {
           <button
             type="button"
             onClick={login}
-            className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-ink transition hover:bg-brand-deep hover:text-white"
+            className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white transition hover:bg-brand-deep"
           >
             Log in to continue
           </button>

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="HKCM">
+  <rect width="64" height="64" rx="14" fill="#F4F6FA"/>
+  <g transform="translate(6,8) scale(0.85)">
+    <path
+      d="M8 4h28c6.627 0 12 5.373 12 12v36c0 4.418-3.582 8-8 8H16c-6.627 0-12-5.373-12-12V12C4 7.582 7.582 4 12 4Z"
+      fill="#3B6EF5"
+    />
+    <path
+      d="M26 0h30c6.627 0 12 5.373 12 12v40c0 6.627-5.373 12-12 12H34c-6.627 0-12-5.373-12-12V12C22 5.373 27.373 0 34 0Z"
+      fill="#0B1B3A"
+    />
+  </g>
+</svg>

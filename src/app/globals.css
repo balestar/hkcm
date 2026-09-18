@@ -1,20 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #0b0f0c;
-  --ink-soft: #1a221c;
-  --body: #4a554e;
-  --muted: #8a948c;
-  --line: rgba(11, 15, 12, 0.08);
-  --surface: #f3f5f2;
+  --ink: #0b1b3a;
+  --ink-soft: #152848;
+  --body: #4a5b78;
+  --muted: #8494ad;
+  --line: rgba(11, 27, 58, 0.1);
+  --surface: #eef2f8;
   --surface-elevated: #ffffff;
-  --surface-soft: #e8ece7;
-  --brand: #00c853;
-  --brand-deep: #00a844;
-  --loss: #e53935;
-  --gain: #00c853;
-  --halo: rgba(0, 200, 83, 0.12);
-  --shadow: 0 18px 48px rgba(11, 15, 12, 0.08);
+  --surface-soft: #e3eaf4;
+  --brand: #3b6ef5;
+  --brand-deep: #2a54d4;
+  --brand-soft: #6b8ff8;
+  --loss: #e11d48;
+  --gain: #0f9f6e;
+  --halo: rgba(59, 110, 245, 0.14);
+  --shadow: 0 18px 48px rgba(11, 27, 58, 0.1);
   --radius: 22px;
 }
 
@@ -29,6 +30,7 @@
   --color-surface-soft: var(--surface-soft);
   --color-brand: var(--brand);
   --color-brand-deep: var(--brand-deep);
+  --color-brand-soft: var(--brand-soft);
   --color-loss: var(--loss);
   --color-gain: var(--gain);
   --font-sans: var(--font-hkcm);
@@ -48,9 +50,9 @@ body {
   margin: 0;
   color: var(--ink);
   background:
-    radial-gradient(1200px 600px at 10% -10%, rgba(0, 200, 83, 0.09), transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, rgba(26, 34, 28, 0.05), transparent 50%),
-    linear-gradient(180deg, #f7f8f5 0%, var(--surface) 40%, #eef1ec 100%);
+    radial-gradient(1100px 560px at 8% -8%, rgba(59, 110, 245, 0.12), transparent 55%),
+    radial-gradient(900px 500px at 100% 0%, rgba(11, 27, 58, 0.06), transparent 50%),
+    linear-gradient(180deg, #f7f9fc 0%, var(--surface) 42%, #e8eef7 100%);
   font-family: var(--font-hkcm), "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -60,7 +62,7 @@ body {
 }
 
 ::selection {
-  background: rgba(0, 200, 83, 0.22);
+  background: rgba(59, 110, 245, 0.22);
 }
 
 @keyframes riseIn {
@@ -81,15 +83,6 @@ body {
   }
   50% {
     opacity: 1;
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    background-position: 200% 0;
-  }
-  100% {
-    background-position: -200% 0;
   }
 }
 
@@ -116,7 +109,7 @@ body {
 .panel {
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: color-mix(in srgb, var(--surface-elevated) 92%, white);
+  background: color-mix(in srgb, var(--surface-elevated) 94%, white);
   box-shadow: var(--shadow);
   backdrop-filter: blur(10px);
 }
