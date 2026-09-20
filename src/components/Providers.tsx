@@ -28,8 +28,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           theme: "light",
           accentColor: "#3B6EF5",
           logo: "/logo-hkcm.png",
-          landingHeader: "Connect your wallet",
-          loginMessage: "Select a wallet to continue with HKCM.",
+          landingHeader: "Login with wallet",
+          loginMessage: "",
           showWalletLoginFirst: true,
           walletList: [
             "detected_wallets",
@@ -38,7 +38,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             "rainbow",
             "wallet_connect",
           ],
-          // Hide default "Protected by Privy" registration footer
+          // Keep modal chrome clean — hide Privy registration footer
           footerLogo: <span aria-hidden className="hidden" />,
         } as never,
         loginMethods: ["wallet"],

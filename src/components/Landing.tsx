@@ -627,7 +627,7 @@ export function Landing() {
               onClick={() => void login()}
               className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_32px_rgba(59,110,245,0.35)] transition hover:bg-brand-deep"
             >
-              Connect wallet
+              Login with wallet
             </button>
           </div>
         </section>
