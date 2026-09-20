@@ -11,6 +11,7 @@ export type ModalPerson = {
   linkedin: string;
   bio?: string;
   quote?: string;
+  initials?: string;
 };
 
 function LinkedInBadge({ href }: { href: string }) {
@@ -134,15 +135,27 @@ export function TeamMemberModal({
             >
               ‹
             </button>
-            <div className="relative h-28 w-28 overflow-hidden rounded-full ring-2 ring-white/20">
-              <Image
-                src={person.image}
-                alt={person.name}
-                fill
-                className="object-cover object-top"
-                sizes="112px"
-                priority
-              />
+            <div className="relative flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-[#1e3a5f] ring-2 ring-white/20">
+              {person.image ? (
+                <Image
+                  src={person.image}
+                  alt={person.name}
+                  fill
+                  className="object-cover object-top"
+                  sizes="112px"
+                  priority
+                />
+              ) : (
+                <span className="text-[1.75rem] font-semibold tracking-wide text-white/90">
+                  {person.initials ||
+                    person.name
+                      .split(/\s+/)
+                      .map((w) => w[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                </span>
+              )}
             </div>
             <button
               type="button"

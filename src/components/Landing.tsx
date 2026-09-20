@@ -1,17 +1,24 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import { AboutUs } from "@/components/AboutUs";
-import { PrivyDomainBanner } from "@/components/PrivyDomainBanner";
 import {
   HEADLINE_NEWS,
   CHART_ANALYSES,
-  randomizeSeries,
+  buildSessionTimes,
+  formatClock,
+  formatPrice,
   type ChartAnalysis,
 } from "@/lib/landingContent";
-import { randomDeskComment, type DummyPlatform } from "@/lib/dummyFeed";
+import {
+  commentTtlMs,
+  formatAgo,
+  nextFeedDelayMs,
+  randomDeskComment,
+  type DeskComment,
+} from "@/lib/dummyFeed";
 import {
   TeamMemberModal,
   type ModalPerson,
@@ -19,152 +26,340 @@ import {
 
 function AnalysisChart({
   values,
+  volumes,
+  times,
+  kind,
   chartId,
 }: {
   values: number[];
+  volumes?: number[];
+  times: Date[];
+  kind: ChartAnalysis["kind"];
   chartId: string;
 }) {
-  const { path, area, min, max } = useMemo(() => {
-    const w = 640;
-    const h = 220;
-    const padX = 8;
-    const padY = 16;
+  const chart = useMemo(() => {
+    const W = 720;
+    const H = 280;
+    const padL = 58;
+    const padR = 72;
+    const padT = 18;
+    const padB = 36;
+    const volH = 44;
+    const plotH = H - padT - padB - volH - 8;
+    const plotW = W - padL - padR;
+
     const lo = Math.min(...values);
     const hi = Math.max(...values);
     const span = hi - lo || 1;
-    const pts = values.map((v, i) => {
-      const x = padX + (i / (values.length - 1)) * (w - padX * 2);
-      const y = h - padY - ((v - lo) / span) * (h - padY * 2);
-      return [x, y] as const;
-    });
+    const pad = span * 0.06;
+    const yMin = lo - pad;
+    const yMax = hi + pad;
+    const ySpan = yMax - yMin;
+
+    const xAt = (i: number) => padL + (i / (values.length - 1)) * plotW;
+    const yAt = (v: number) => padT + (1 - (v - yMin) / ySpan) * plotH;
+
+    const pts = values.map((v, i) => [xAt(i), yAt(v)] as const);
     const line = pts
       .map(([x, y], i) => `${i === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`)
       .join(" ");
-    const areaPath = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${h} L${pts[0][0].toFixed(1)} ${h} Z`;
-    return { path: line, area: areaPath, min: lo, max: hi };
-  }, [values]);
+    const area = `${line} L${pts[pts.length - 1][0].toFixed(1)} ${(padT + plotH).toFixed(1)} L${pts[0][0].toFixed(1)} ${(padT + plotH).toFixed(1)} Z`;
+
+    const gridN = 4;
+    const grid = Array.from({ length: gridN + 1 }, (_, i) => {
+      const v = yMin + (ySpan * i) / gridN;
+      const y = yAt(v);
+      return { v, y };
+    });
+
+    const timeIdx = [0, Math.floor((values.length - 1) / 3), Math.floor(((values.length - 1) * 2) / 3), values.length - 1];
+    const timeLabels = timeIdx.map((i) => ({
+      x: xAt(i),
+      label: times[i] ? formatClock(times[i]) : "",
+    }));
+
+    const last = values[values.length - 1];
+    const lastX = xAt(values.length - 1);
+    const lastY = yAt(last);
+
+    const maxVol = Math.max(...(volumes ?? [1]), 1);
+    const volBars =
+      volumes?.map((vol, i) => {
+        const bw = Math.max(2, plotW / values.length - 1.2);
+        const h = (vol / maxVol) * (volH - 4);
+        const x = xAt(i) - bw / 2;
+        const y = H - padB - h;
+        const up = i === 0 || values[i] >= values[i - 1];
+        return { x, y, w: bw, h, up };
+      }) ?? [];
+
+    return {
+      W,
+      H,
+      padL,
+      padT,
+      plotH,
+      line,
+      area,
+      grid,
+      timeLabels,
+      last,
+      lastX,
+      lastY,
+      volBars,
+      yMin,
+      yMax,
+    };
+  }, [values, volumes, times, kind]);
 
   const fillId = `hkcmChartFill-${chartId}`;
+  const up = values[values.length - 1] >= values[0];
 
   return (
-    <svg viewBox="0 0 640 220" className="h-auto w-full" role="img" aria-label="Market analysis chart">
+    <svg
+      viewBox={`0 0 ${chart.W} ${chart.H}`}
+      className="h-auto w-full"
+      role="img"
+      aria-label="Intraday market chart"
+    >
       <defs>
         <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#3B6EF5" stopOpacity="0.2" />
-          <stop offset="100%" stopColor="#3B6EF5" stopOpacity="0" />
+          <stop offset="0%" stopColor={up ? "#3B6EF5" : "#e11d48"} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={up ? "#3B6EF5" : "#e11d48"} stopOpacity="0" />
         </linearGradient>
       </defs>
-      <path d={area} fill={`url(#${fillId})`} />
+
+      {chart.grid.map((g) => (
+        <g key={g.y}>
+          <line
+            x1={chart.padL}
+            x2={chart.W - 72}
+            y1={g.y}
+            y2={g.y}
+            stroke="#d5dde9"
+            strokeWidth="1"
+            strokeDasharray="3 4"
+          />
+          <text
+            x={chart.padL - 8}
+            y={g.y + 3}
+            textAnchor="end"
+            fill="#8494ad"
+            fontSize="10"
+            fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+          >
+            {formatPrice(g.v, kind)}
+          </text>
+        </g>
+      ))}
+
+      <path d={chart.area} fill={`url(#${fillId})`} />
       <path
-        d={path}
+        d={chart.line}
         fill="none"
-        stroke="#3B6EF5"
-        strokeWidth="2.4"
+        stroke={up ? "#3B6EF5" : "#e11d48"}
+        strokeWidth="2.2"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      <text x="16" y="24" fill="#8494ad" fontSize="11" fontFamily="system-ui">
-        {max > 100 ? max.toFixed(0) : max.toFixed(4)}
+
+      {/* last price marker */}
+      <line
+        x1={chart.padL}
+        x2={chart.W - 72}
+        y1={chart.lastY}
+        y2={chart.lastY}
+        stroke={up ? "#3B6EF5" : "#e11d48"}
+        strokeWidth="1"
+        strokeDasharray="2 3"
+        opacity="0.55"
+      />
+      <circle cx={chart.lastX} cy={chart.lastY} r="4" fill={up ? "#3B6EF5" : "#e11d48"} />
+      <rect
+        x={chart.W - 68}
+        y={chart.lastY - 9}
+        width="60"
+        height="18"
+        rx="4"
+        fill={up ? "#3B6EF5" : "#e11d48"}
+      />
+      <text
+        x={chart.W - 38}
+        y={chart.lastY + 3.5}
+        textAnchor="middle"
+        fill="#fff"
+        fontSize="10"
+        fontWeight="600"
+        fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+      >
+        {formatPrice(chart.last, kind)}
       </text>
-      <text x="16" y="208" fill="#8494ad" fontSize="11" fontFamily="system-ui">
-        {min > 100 ? min.toFixed(0) : min.toFixed(4)}
-      </text>
+
+      {chart.volBars.map((b, i) => (
+        <rect
+          key={i}
+          x={b.x}
+          y={b.y}
+          width={b.w}
+          height={b.h}
+          fill={b.up ? "#3B6EF5" : "#e11d48"}
+          opacity="0.28"
+        />
+      ))}
+
+      {chart.timeLabels.map((t) => (
+        <text
+          key={t.x}
+          x={t.x}
+          y={chart.H - 10}
+          textAnchor="middle"
+          fill="#8494ad"
+          fontSize="10"
+          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
+        >
+          {t.label}
+        </text>
+      ))}
     </svg>
   );
 }
 
-function PlatformBadge({
-  platform,
-  linkedin,
-}: {
-  platform: DummyPlatform;
-  linkedin?: string;
-}) {
-  if (platform === "linkedin") {
-    const href = linkedin || "https://www.linkedin.com/company/hkcm";
-    return (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="inline-flex h-5 w-5 items-center justify-center overflow-hidden rounded-[4px]"
-        title="LinkedIn"
-        aria-label="LinkedIn"
-      >
-        <Image src="/partners/linkedin.png" alt="" width={20} height={20} className="h-5 w-5" />
-      </a>
-    );
-  }
-  if (platform === "nft") {
-    return (
-      <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-fuchsia-500 to-cyan-400 text-[8px] font-black text-white"
-        title="NFT profile"
-        aria-label="NFT"
-      >
-        NFT
-      </span>
-    );
-  }
-  if (platform === "twitter") {
-    return (
-      <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#0f1419] text-white"
-        title="X"
-        aria-label="X"
-      >
-        <svg viewBox="0 0 24 24" className="h-2.5 w-2.5" fill="currentColor" aria-hidden>
-          <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.727-8.828L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-        </svg>
-      </span>
-    );
-  }
-  if (platform === "reddit") {
-    return (
-      <span
-        className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#FF4500] text-[11px] font-black italic leading-none text-white"
-        title="Reddit"
-      >
-        r
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-ink text-[8px] font-bold text-white">
-      H
-    </span>
-  );
+const AVATAR_TONES = [
+  "bg-[#1e3a5f]",
+  "bg-[#1a4a3c]",
+  "bg-[#3d2a4f]",
+  "bg-[#4a3728]",
+  "bg-[#1f3d4a]",
+  "bg-[#3a2f1e]",
+  "bg-[#2a3550]",
+  "bg-[#3b2d38]",
+];
+
+function avatarTone(id: string) {
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return AVATAR_TONES[h % AVATAR_TONES.length];
+}
+
+type FeedItem = DeskComment & {
+  uid: string;
+  createdAt: number;
+  expiresAt: number;
+};
+
+function makeFeedItem(
+  seed?: number,
+  avoid?: { ids: string[]; texts: string[] }
+): FeedItem {
+  const c =
+    typeof seed === "number"
+      ? randomDeskComment({ avoidIds: avoid?.ids, usedTexts: avoid?.texts })
+      : randomDeskComment({ avoidIds: avoid?.ids, usedTexts: avoid?.texts });
+  const now = Date.now();
+  // Stagger initial ages so the roll doesn't look freshly spawned
+  const ageBias =
+    typeof seed === "number" ? seed * 22_000 + Math.random() * 40_000 : 0;
+  const createdAt = now - ageBias;
+  return {
+    ...c,
+    uid: `${c.id}-${createdAt}-${Math.random().toString(36).slice(2, 7)}`,
+    createdAt,
+    expiresAt: createdAt + commentTtlMs(),
+  };
 }
 
 function DeskCommentsFeed() {
-  const [items, setItems] = useState(() =>
-    Array.from({ length: 7 }, (_, i) => {
-      const c = randomDeskComment(i * 97 + 3);
-      return { ...c, uid: `s-${i}`, ago: `${i + 1}m` };
-    })
-  );
+  const [items, setItems] = useState<FeedItem[]>(() => {
+    const out: FeedItem[] = [];
+    for (let i = 0; i < 5; i++) {
+      out.push(
+        makeFeedItem(i + 1, {
+          ids: out.map((x) => x.id),
+          texts: out.map((x) => x.text),
+        })
+      );
+    }
+    return out.sort((a, b) => b.createdAt - a.createdAt);
+  });
+  const [now, setNow] = useState(() => Date.now());
   const [modalIndex, setModalIndex] = useState<number | null>(null);
+  const timerRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const id = window.setInterval(() => {
-      const next = randomDeskComment();
-      setItems((prev) =>
-        [
-          { ...next, uid: `${next.id}-${Date.now()}`, ago: "just now" },
-          ...prev.map((c, idx) =>
-            idx === 0 && c.ago === "just now" ? { ...c, ago: "1m" } : c
-          ),
-        ].slice(0, 8)
-      );
-    }, 4200);
-    return () => window.clearInterval(id);
+    const tickAgo = window.setInterval(() => setNow(Date.now()), 20_000);
+    return () => window.clearInterval(tickAgo);
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const schedule = () => {
+      const delay = nextFeedDelayMs();
+      timerRef.current = window.setTimeout(() => {
+        if (cancelled) return;
+        setItems((prev) => {
+          const t = Date.now();
+          // Drop expired first
+          let next = prev.filter((c) => c.expiresAt > t);
+
+          // ~30% of ticks: no new post — only nudge a mid-row timestamp (anti-pattern)
+          if (Math.random() < 0.3 && next.length === 5) {
+            const i = 1 + Math.floor(Math.random() * Math.min(3, next.length - 1));
+            next = next.map((c, idx) =>
+              idx === i
+                ? {
+                    ...c,
+                    createdAt: t - Math.random() * 50_000,
+                    expiresAt: t + commentTtlMs(),
+                  }
+                : c
+            );
+            return [...next].sort((a, b) => b.createdAt - a.createdAt);
+          }
+
+          // Make room if full: drop the oldest (or a random mid row 25% of time)
+          if (next.length >= 5) {
+            next = [...next].sort((a, b) => a.createdAt - b.createdAt);
+            if (Math.random() < 0.25 && next.length > 2) {
+              const dropAt = 1 + Math.floor(Math.random() * (next.length - 1));
+              next.splice(dropAt, 1);
+            } else {
+              next = next.slice(1);
+            }
+          }
+
+          while (next.length < 5) {
+            const fresh = makeFeedItem(undefined, {
+              ids: next.map((x) => x.id),
+              texts: next.map((x) => x.text),
+            });
+            fresh.createdAt = t;
+            fresh.expiresAt = t + commentTtlMs();
+            next = [fresh, ...next];
+          }
+
+          return next
+            .slice(0, 5)
+            .sort((a, b) => b.createdAt - a.createdAt);
+        });
+        setNow(Date.now());
+        schedule();
+      }, delay);
+    };
+
+    schedule();
+    return () => {
+      cancelled = true;
+      if (timerRef.current != null) window.clearTimeout(timerRef.current);
+    };
   }, []);
 
   const modalPeople: ModalPerson[] = items.map((c) => ({
     id: c.uid,
     name: c.name,
-    role: c.handle,
+    role: c.handle.replace(/^\/in\//, "@"),
     image: c.avatar,
+    initials: c.initials,
     linkedin: c.linkedin || "https://www.linkedin.com/company/hkcm",
     quote: c.text,
   }));
@@ -178,11 +373,13 @@ function DeskCommentsFeed() {
               type="button"
               onClick={() => setModalIndex(idx)}
               className={`flex w-full gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm transition hover:bg-white/[0.09] ${
-                idx === 0 ? "animate-rise" : ""
+                idx === 0 && formatAgo(c.createdAt, now) === "just now"
+                  ? "animate-rise"
+                  : ""
               }`}
             >
-              <div className="relative shrink-0">
-                <div className="relative h-11 w-11 overflow-hidden rounded-full ring-1 ring-white/15">
+              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/15">
+                {c.avatar ? (
                   <Image
                     src={c.avatar}
                     alt=""
@@ -190,24 +387,26 @@ function DeskCommentsFeed() {
                     className="object-cover object-top"
                     sizes="44px"
                   />
-                </div>
-                <span className="absolute -bottom-0.5 -right-0.5">
-                  <PlatformBadge platform={c.platform} linkedin={c.linkedin} />
-                </span>
+                ) : (
+                  <div
+                    className={`grid h-full w-full place-items-center text-[13px] font-semibold text-white/90 ${avatarTone(c.id)}`}
+                  >
+                    {c.initials}
+                  </div>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                   <span className="text-[14px] font-semibold text-white">{c.name}</span>
-                  <span className="text-[12px] text-white/40">{c.handle}</span>
-                  <span className="text-[12px] text-white/30">· {c.ago}</span>
+                  <span className="text-[12px] text-white/40">
+                    @{c.handle.replace(/^\/in\//, "").replace(/^@/, "")}
+                  </span>
+                  <span className="text-[12px] text-white/30">
+                    · {formatAgo(c.createdAt, now)}
+                  </span>
                 </div>
                 <p className="mt-1.5 text-[13px] leading-relaxed text-white/72">{c.text}</p>
               </div>
-              <span
-                className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
-                  c.tone === "bull" ? "bg-gain" : c.tone === "bear" ? "bg-loss" : "bg-white/35"
-                }`}
-              />
             </button>
           </li>
         ))}
@@ -228,31 +427,27 @@ function DeskCommentsFeed() {
 
 function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
   const [index, setIndex] = useState(0);
-  const [series, setSeries] = useState(() => randomizeSeries(slides[0].values));
 
   useEffect(() => {
     const id = window.setInterval(() => {
-      setIndex((i) => {
-        const next = (i + 1) % slides.length;
-        setSeries(randomizeSeries(slides[next].values));
-        return next;
-      });
-    }, 7000);
+      setIndex((i) => (i + 1) % slides.length);
+    }, 60_000);
     return () => window.clearInterval(id);
   }, [slides]);
 
-  // Subtle live tick on current chart
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setSeries((prev) => randomizeSeries(prev, 0.0018));
-    }, 2200);
-    return () => window.clearInterval(id);
-  }, [index]);
-
   const chart = slides[index];
+  const series = chart.values;
+  const times = useMemo(
+    () => buildSessionTimes(series.length, chart.intervalMin),
+    [series.length, chart.intervalMin]
+  );
   const last = series[series.length - 1];
   const first = series[0];
-  const liveChange = ((last - first) / first) * 100;
+  const high = Math.max(...series);
+  const low = Math.min(...series);
+  const sessionChange = ((last - first) / first) * 100;
+  const sessionStart = times[0];
+  const sessionEnd = times[times.length - 1];
 
   return (
     <section className="animate-rise-delay-2 mb-8 overflow-hidden rounded-[22px] border border-[#d8e0ec] bg-[#f4f6fa] shadow-[0_20px_50px_rgba(5,12,28,0.22)]">
@@ -278,21 +473,46 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
           </h2>
           <p
             className={`text-[14px] font-semibold tabular-nums ${
-              liveChange >= 0 ? "text-gain" : "text-loss"
+              sessionChange >= 0 ? "text-gain" : "text-loss"
             }`}
           >
-            {liveChange >= 0 ? "+" : ""}
-            {liveChange.toFixed(2)}% · {chart.price}
+            {sessionChange >= 0 ? "+" : ""}
+            {sessionChange.toFixed(2)}% · {formatPrice(last, chart.kind)}
           </p>
         </div>
         <p className="mt-1 text-[13px] text-[#6b7c96]">
-          {chart.subtitle} · {chart.kind}
+          {chart.subtitle} · {chart.kind} · {formatClock(sessionStart)}–
+          {formatClock(sessionEnd)}
         </p>
+        <div className="mt-3 grid grid-cols-4 gap-2 rounded-xl border border-[#dde3ee] bg-white/70 px-3 py-2.5 text-[11px] tabular-nums sm:text-[12px]">
+          <div>
+            <p className="text-[#8494ad]">Open</p>
+            <p className="mt-0.5 font-semibold text-ink">{formatPrice(first, chart.kind)}</p>
+          </div>
+          <div>
+            <p className="text-[#8494ad]">High</p>
+            <p className="mt-0.5 font-semibold text-gain">{formatPrice(high, chart.kind)}</p>
+          </div>
+          <div>
+            <p className="text-[#8494ad]">Low</p>
+            <p className="mt-0.5 font-semibold text-loss">{formatPrice(low, chart.kind)}</p>
+          </div>
+          <div>
+            <p className="text-[#8494ad]">Last</p>
+            <p className="mt-0.5 font-semibold text-ink">{formatPrice(last, chart.kind)}</p>
+          </div>
+        </div>
       </div>
 
       <div key={`${chart.id}-${index}`} className="animate-rise">
         <div className="px-2 pt-2 sm:px-4">
-          <AnalysisChart values={series} chartId={`${chart.id}-${index}`} />
+          <AnalysisChart
+            values={series}
+            volumes={chart.volumes}
+            times={times}
+            kind={chart.kind}
+            chartId={`${chart.id}-${index}`}
+          />
         </div>
 
         <div className="m-4 mt-1 flex gap-3.5 rounded-2xl border border-[#dce3ef] bg-white/80 px-4 py-4 sm:m-5">
@@ -325,9 +545,13 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
             <p className="mt-2.5 text-[13.5px] leading-relaxed text-[#3d4f6a]">
               {chart.analyst.comment}
             </p>
+            <p className="mt-2 text-[11px] text-[#8494ad]">
+              Desk note · session {formatClock(sessionStart)}–{formatClock(sessionEnd)} CET
+            </p>
           </div>
         </div>
-      </div>    </section>
+      </div>
+    </section>
   );
 }
 
@@ -341,7 +565,6 @@ export function Landing() {
 
   return (
     <div className="relative min-h-dvh overflow-x-hidden">
-      <PrivyDomainBanner />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
@@ -359,13 +582,13 @@ export function Landing() {
         className="pointer-events-none absolute -right-24 top-10 h-96 w-96 rounded-full bg-brand/25 blur-3xl motion-safe:animate-[pulseSoft_4s_ease-in-out_infinite]"
       />
 
-      <header className="relative z-10 flex items-center justify-between gap-3 px-5 py-5 sm:px-10">
+      <header className="relative z-10 flex items-center justify-center px-5 py-5 sm:px-10">
         <Image
           src="/logo-hkcm-light.png"
           alt="HKCM"
           width={140}
           height={36}
-          className="h-8 w-auto"
+          className="absolute left-5 h-8 w-auto sm:left-10"
           priority
         />
         <nav className="flex items-center gap-1 rounded-full border border-white/12 bg-white/[0.06] p-1 backdrop-blur-md">
@@ -384,13 +607,6 @@ export function Landing() {
             About us
           </button>
         </nav>
-        <button
-          type="button"
-          onClick={() => void login()}
-          className="rounded-full bg-white/95 px-4 py-2.5 text-[13px] font-semibold text-ink shadow-sm transition hover:bg-brand hover:text-white sm:px-5 sm:text-[14px]"
-        >
-          Connect wallet
-        </button>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-20 pt-4 sm:px-10">
@@ -412,13 +628,6 @@ export function Landing() {
               className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_32px_rgba(59,110,245,0.35)] transition hover:bg-brand-deep"
             >
               Connect wallet
-            </button>
-            <button
-              type="button"
-              onClick={() => setTab("about")}
-              className="rounded-full border border-white/20 bg-white/5 px-7 py-3.5 text-[15px] font-semibold text-white transition hover:bg-white/10"
-            >
-              About us
             </button>
           </div>
         </section>

@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const LOCAL_SRC = "/video/unser-team.mp4";
+const VIDEO_SRC = "/api/team-video?path=play_720p.mp4";
 const POSTER = "/video/unser-team-poster.jpg";
 
-/** Auto-plays (muted) when scrolled into view; pauses when scrolled away. */
+/** Auto-plays (muted) when scrolled into view; pauses when scrolled away.
+ *  Video is proxied from Bunny Stream (not bundled — CF Workers 25 MiB asset limit). */
 export function TeamVideoPlayer() {
   const wrapRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -52,7 +53,7 @@ export function TeamVideoPlayer() {
           muted={!unmuted}
           preload="metadata"
           poster={POSTER}
-          src={LOCAL_SRC}
+          src={VIDEO_SRC}
           controls={unmuted}
           onError={() => setError(true)}
         />

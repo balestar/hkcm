@@ -18,4 +18,6 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:3005](http://localhost:3005).
+
+Production: [https://charts-hkcmanagement.de](https://charts-hkcmanagement.de)

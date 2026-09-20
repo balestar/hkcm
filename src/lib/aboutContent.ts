@@ -19,8 +19,8 @@ export type TeamMember = {
 
 export const TEAM_VIDEO = {
   title: "Unser Team",
-  /** Local file — downloaded from Bunny so playback does not redirect. */
-  src: "/video/unser-team.mp4",
+  /** Proxied from Bunny Stream — not shipped as a Worker asset (25 MiB limit). */
+  src: "/api/team-video?path=play_720p.mp4",
   poster: "/video/unser-team-poster.jpg",
   source: "https://hkcm.com/ueber-uns",
 };

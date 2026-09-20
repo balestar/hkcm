@@ -16,9 +16,19 @@
 # next.js
 /.next/
 /out/
+/.open-next/
+.open-next
 
 # production
 /build
+
+# Cloudflare / OpenNext
+.wrangler/
+.dev.vars
+cloudflare-env.d.ts
+
+# Large media — served via Bunny Stream proxy (/api/team-video)
+/public/video/*.mp4
 
 # misc
 .DS_Store
