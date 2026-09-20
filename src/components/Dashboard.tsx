@@ -1,18 +1,37 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { AccountSummary } from "@/components/AccountSummary";
 import { useAuth } from "@/components/AuthProvider";
+import {
+  CreateProfileModal,
+  loadProfile,
+  type UserProfile,
+} from "@/components/CreateProfileModal";
 import { NewsPanel } from "@/components/NewsPanel";
 import { TimeGreeting } from "@/components/TimeGreeting";
 import { TopPicksPanel } from "@/components/TopPicksPanel";
 import { YieldsPanel } from "@/components/YieldsPanel";
 
 export function Dashboard() {
-  const { logout } = useAuth();
+  const { logout, address } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profileReady, setProfileReady] = useState(false);
+
+  useEffect(() => {
+    setProfile(loadProfile(address));
+    setProfileReady(true);
+  }, [address]);
+
+  const needsProfile = profileReady && !!address && !profile;
 
   return (
     <div className="min-h-dvh">
+      {needsProfile && address && (
+        <CreateProfileModal address={address} onCreated={setProfile} />
+      )}
+
       <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_86%,white)]/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5 sm:px-6">
           <div className="flex items-center gap-2.5">
@@ -37,7 +56,7 @@ export function Dashboard() {
 
       <main className="mx-auto max-w-3xl px-5 py-8 sm:px-6 sm:py-10">
         <div className="animate-rise mb-6">
-          <TimeGreeting />
+          <TimeGreeting name={profile?.fullName} />
           <p className="mt-2 text-[15px] text-body">
             Your brief — balances, yields, and what Europe is watching.
           </p>
