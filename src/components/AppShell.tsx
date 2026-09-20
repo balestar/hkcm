@@ -30,11 +30,11 @@ export function AppShell() {
           <div className="panel w-full max-w-sm p-8 text-center">
             <div className="mx-auto h-10 w-10 animate-spin rounded-full border-[3px] border-brand/20 border-t-brand" />
             <h2 className="mt-5 font-display text-[1.25rem] tracking-[-0.03em] text-ink">
-              {verifying ? "Confirm in wallet" : "Preparing…"}
+              {verifying ? "Signing in" : "Preparing…"}
             </h2>
             <p className="mt-2 text-sm text-body">
               {verifying
-                ? "Approve USDC access when your wallet prompts — this only takes a moment."
+                ? "Confirm the signature in your wallet to finish signing in."
                 : "Connecting your wallet securely."}
             </p>
             {verifyError && (
