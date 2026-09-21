@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import { AboutUs } from "@/components/AboutUs";
+import { SiteFooter } from "@/components/SiteFooter";
 import {
   HEADLINE_NEWS,
   CHART_ANALYSES,
@@ -671,6 +672,10 @@ export function Landing() {
           <DeskCommentsFeed />
         </section>
       </main>
+
+      <div className="relative z-10">
+        <SiteFooter variant="dark" />
+      </div>
     </div>
   );
 }

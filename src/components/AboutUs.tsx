@@ -9,6 +9,7 @@ import {
   PARTNERS,
   TEAM,
 } from "@/lib/aboutContent";
+import { SiteFooter } from "@/components/SiteFooter";
 import { TeamVideoPlayer } from "@/components/TeamVideoPlayer";
 import {
   TeamMemberModal,
@@ -261,6 +262,10 @@ export function AboutUs({ onBack }: { onBack: () => void }) {
           variant="avatar"
         />
       )}
+
+      <div className="relative z-10">
+        <SiteFooter variant="dark" />
+      </div>
     </div>
   );
 }

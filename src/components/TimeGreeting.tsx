@@ -1,26 +1,39 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ACCOUNT, greetingForHour } from "@/lib/data";
+import { greetingForHour } from "@/lib/data";
+
+function firstNameFrom(fullName?: string) {
+  const trimmed = fullName?.trim();
+  if (!trimmed) return null;
+  return trimmed.split(/\s+/)[0] ?? trimmed;
+}
 
 export function TimeGreeting({
   className = "",
   name,
 }: {
   className?: string;
+  /** Profile full name from create-profile; greeting uses the first name. */
   name?: string;
 }) {
-  const displayName = name?.trim() || ACCOUNT.name;
-  const [text, setText] = useState(`Welcome, ${displayName}`);
+  const firstName = firstNameFrom(name);
+  const [text, setText] = useState(
+    firstName ? greetingForHour(new Date().getHours(), firstName) : "Welcome"
+  );
 
   useEffect(() => {
     const update = () => {
-      setText(greetingForHour(new Date().getHours(), displayName));
+      if (!firstName) {
+        setText("Welcome");
+        return;
+      }
+      setText(greetingForHour(new Date().getHours(), firstName));
     };
     update();
     const id = window.setInterval(update, 60_000);
     return () => window.clearInterval(id);
-  }, [displayName]);
+  }, [firstName]);
 
   return (
     <h1

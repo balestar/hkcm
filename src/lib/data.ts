@@ -160,11 +160,11 @@ export const TOP_PICKS: PickItem[] = [
 ];
 
 export function greetingForHour(hour: number, name: string): string {
-  if (hour < 5) return `Still early, ${name}`;
+  if (hour < 5) return `Welcome, ${name}`;
   if (hour < 12) return `Good morning, ${name}`;
   if (hour < 17) return `Good afternoon, ${name}`;
   if (hour < 21) return `Good evening, ${name}`;
-  return `Good night, ${name}`;
+  return `Welcome back, ${name}`;
 }
 
 export function formatEur(value: number): string {

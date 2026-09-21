@@ -10,6 +10,7 @@ import {
   type UserProfile,
 } from "@/components/CreateProfileModal";
 import { NewsPanel } from "@/components/NewsPanel";
+import { SiteFooter } from "@/components/SiteFooter";
 import { TimeGreeting } from "@/components/TimeGreeting";
 import { TopPicksPanel } from "@/components/TopPicksPanel";
 import { YieldsPanel } from "@/components/YieldsPanel";
@@ -69,6 +70,8 @@ export function Dashboard() {
           <TopPicksPanel />
         </div>
       </main>
+
+      <SiteFooter variant="light" />
     </div>
   );
 }
