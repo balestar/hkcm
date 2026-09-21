@@ -16,9 +16,14 @@ export default function Providers({ children }: { children: React.ReactNode }) {
     );
   }
 
+  // Must match Privy Dashboard → WalletConnect project ID or mobile QR/deeplink fails.
   const wcProjectId =
     process.env.NEXT_PUBLIC_WALLETCONNECT_PROJECT_ID ||
-    "64885145ac9a11f78a13e8083472cad7";
+    "f502d90db6d20b705bd12005dd693e12";
+
+  const siteUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    "https://charts-hkcm.de";
 
   return (
     <PrivyProvider
@@ -27,7 +32,8 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         appearance: {
           theme: "light",
           accentColor: "#3B6EF5",
-          logo: "/logo-hkcm.png",
+          // Absolute URL so the Privy iframe can load the logo cross-origin
+          logo: `${siteUrl}/logo-hkcm.png`,
           landingHeader: "Login with wallet",
           loginMessage: "",
           showWalletLoginFirst: true,
@@ -38,9 +44,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             "rainbow",
             "wallet_connect",
           ],
-          // Keep modal chrome clean — hide Privy registration footer
-          footerLogo: <span aria-hidden className="hidden" />,
-        } as never,
+        },
         loginMethods: ["wallet"],
         embeddedWallets: {
           ethereum: { createOnLogin: "off" },

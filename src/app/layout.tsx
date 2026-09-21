@@ -17,7 +17,7 @@ const syne = Syne({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://charts-hkcmanagement.de"),
+  metadataBase: new URL("https://charts-hkcm.de"),
   title: "HKCM",
   description:
     "Smart investing home — account summary, yields, EU market news, and top picks.",

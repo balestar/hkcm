@@ -114,9 +114,7 @@ body {
   backdrop-filter: blur(10px);
 }
 
-/* Keep Privy modal chrome clean — hide branding / registration footer */
-#protected-by-privy,
-[id*="protected-by-privy"],
-a[href*="privy.io"][target="_blank"] {
+/* Hide Privy “protected by” badge only — do not hide other privy.io links */
+#protected-by-privy {
   display: none !important;
 }

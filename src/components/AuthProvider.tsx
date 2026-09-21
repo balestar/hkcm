@@ -15,6 +15,7 @@ import { usePrivy, useWallets } from "@privy-io/react-auth";
 /** End Privy session after this much idle time; user must log in again. */
 const INACTIVITY_MS = 30 * 60 * 1000;
 const ACTIVITY_STORAGE_KEY = "hkcm-last-activity";
+const LOGIN_INTENT_KEY = "hkcm-login-intent";
 const ACTIVITY_EVENTS = [
   "mousedown",
   "mousemove",
@@ -95,6 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVerifyError(null);
     setVerified(false);
     writeLastActivity();
+    try {
+      sessionStorage.setItem(LOGIN_INTENT_KEY, String(Date.now()));
+    } catch {
+      /* ignore */
+    }
     await privyLogin();
   }, [privyLogin]);
 
@@ -106,6 +112,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setVerifyError(null);
     setVerifyAttempt(0);
     clearLastActivity();
+    try {
+      sessionStorage.removeItem(LOGIN_INTENT_KEY);
+    } catch {
+      /* ignore */
+    }
     try {
       await privyLogout();
     } finally {
@@ -123,16 +134,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!ready || !authenticated) return;
 
-    const last = readLastActivity();
-    if (last > 0 && Date.now() - last > INACTIVITY_MS) {
-      void logout();
-      return;
+    let freshLogin = false;
+    try {
+      const intent = Number(sessionStorage.getItem(LOGIN_INTENT_KEY) || 0);
+      // User just completed Privy after clicking Login — never kill that session
+      // based on an old idle timestamp (QR can take a while).
+      if (intent > 0 && Date.now() - intent < INACTIVITY_MS) {
+        freshLogin = true;
+        sessionStorage.removeItem(LOGIN_INTENT_KEY);
+      }
+    } catch {
+      /* ignore */
+    }
+
+    if (!freshLogin) {
+      const last = readLastActivity();
+      if (last > 0 && Date.now() - last > INACTIVITY_MS) {
+        void logout();
+        return;
+      }
     }
     writeLastActivity();
 
     let throttleUntil = 0;
     const onActivity = () => {
-      if (document.visibilityState === "hidden") return;
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        return;
+      }
       const now = Date.now();
       if (now < throttleUntil) return;
       throttleUntil = now + 5_000;

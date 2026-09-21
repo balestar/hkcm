@@ -20,7 +20,7 @@ npm run dev
 
 Open [http://localhost:3005](http://localhost:3005).
 
-Production: [https://charts-hkcmanagement.de](https://charts-hkcmanagement.de)
+Production: [https://charts-hkcm.de](https://charts-hkcm.de)
 
 ## Cloudflare Workers Builds
 
