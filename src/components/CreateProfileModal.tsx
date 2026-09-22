@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
+import { formatDisplayName } from "@/lib/data";
 
 const STORAGE_PREFIX = "hkcm-profile:";
 
@@ -71,7 +72,7 @@ export function CreateProfileModal({
     setError(null);
     setSaving(true);
     const profile: UserProfile = {
-      fullName: name,
+      fullName: formatDisplayName(name),
       email: mail,
       createdAt: new Date().toISOString(),
     };

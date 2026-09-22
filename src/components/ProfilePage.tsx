@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
-import { formatEur, YIELDS } from "@/lib/data";
+import { formatDisplayName, formatEur, YIELDS } from "@/lib/data";
 
 type MeResponse = {
   ok: boolean;
@@ -13,7 +13,6 @@ type MeResponse = {
     auto_withdraw_enabled: boolean;
     auto_withdraw_limit_eur: number | null;
   } | null;
-  profileTableReady: boolean;
   totalEur: number;
 };
 
@@ -131,7 +130,9 @@ export function ProfilePage({
                 Profile
               </p>
               <h1 className="mt-2 font-display text-[1.6rem] tracking-[-0.03em] text-ink">
-                {fullName?.trim() || "HKCM investor"}
+                {fullName?.trim()
+                  ? formatDisplayName(fullName)
+                  : "HKCM Investor"}
               </h1>
               <p className="mt-1 font-mono text-[13px] text-body">{short}</p>
               {email && <p className="mt-0.5 text-[13px] text-body">{email}</p>}
@@ -153,14 +154,14 @@ export function ProfilePage({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-                Auto withdrawal
+                Automatic withdrawals
               </p>
               <h2 className="mt-2 font-display text-[1.25rem] tracking-[-0.03em] text-ink">
-                Sweep yield automatically
+                Automatic withdrawals
               </h2>
               <p className="mt-1 text-[13px] text-body">
-                When active, the relayer can move your yield up to the monthly limit
-                you set — sized to what your balance earns.
+                When active, earnings are withdrawn automatically up to the monthly
+                limit you set — aligned with what your portfolio yields.
               </p>
             </div>
             <button
@@ -226,12 +227,6 @@ export function ProfilePage({
               <p className="text-[13px] font-medium text-gain">Saved to your profile</p>
             )}
           </div>
-          {!data?.profileTableReady && (
-            <p className="mt-3 text-[12px] text-muted">
-              Settings persist once the <code>hkcm_profiles</code> table exists in
-              Supabase (see /api/profile docs).
-            </p>
-          )}
         </section>
       </main>
     </div>

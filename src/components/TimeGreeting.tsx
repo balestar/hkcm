@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { greetingForHour } from "@/lib/data";
+import { formatDisplayName, greetingForHour } from "@/lib/data";
 
 function firstNameFrom(fullName?: string) {
   const trimmed = fullName?.trim();
   if (!trimmed) return null;
-  return trimmed.split(/\s+/)[0] ?? trimmed;
+  const first = trimmed.split(/\s+/)[0] ?? trimmed;
+  return formatDisplayName(first);
 }
 
 export function TimeGreeting({
