@@ -511,7 +511,7 @@ export function TopPicksPanel() {
             <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
-                  HKCM desk
+                  Charts
                 </p>
                 <h2
                   id="charts-title"
@@ -568,7 +568,7 @@ export function TopPicksPanel() {
                     ))}
                   </div>
 
-                  <ul className="mt-5 divide-y divide-white/10">
+                  <ul className="mt-5 space-y-3">
                     {filtered.map((pick) => {
                       const up = pick.changePct >= 0;
                       return (
@@ -576,7 +576,7 @@ export function TopPicksPanel() {
                           <button
                             type="button"
                             onClick={() => setSelected(pick)}
-                            className="flex w-full items-center gap-3 py-3.5 text-left transition hover:opacity-90"
+                            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3.5 text-left shadow-[0_10px_28px_rgba(0,0,0,0.35)] transition hover:border-white/18 hover:bg-white/[0.08] hover:shadow-[0_14px_36px_rgba(0,0,0,0.45)] active:scale-[0.99]"
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">

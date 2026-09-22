@@ -38,7 +38,7 @@ export function TimeGreeting({
 
   return (
     <h1
-      className={`font-display text-[2rem] leading-tight tracking-[-0.03em] text-brand sm:text-[2.4rem] ${className}`}
+      className={`font-display text-[2rem] leading-tight tracking-[-0.03em] text-[#152848] sm:text-[2.4rem] ${className}`}
     >
       {text}
     </h1>

@@ -4,24 +4,6 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { NEWS, type NewsItem } from "@/lib/data";
 
-const IMPACT_TONE: Record<
-  NewsItem["impact"],
-  { label: string; className: string }
-> = {
-  Watch: {
-    label: "Watch",
-    className: "bg-amber-500/15 text-amber-800 ring-amber-500/25",
-  },
-  Constructive: {
-    label: "Constructive",
-    className: "bg-emerald-500/15 text-emerald-800 ring-emerald-500/25",
-  },
-  Cautious: {
-    label: "Cautious",
-    className: "bg-sky-500/15 text-sky-900 ring-sky-500/25",
-  },
-};
-
 function NewsPreview({
   item,
   active,
@@ -55,7 +37,7 @@ function NewsPreview({
             playsInline
             loop
             preload="metadata"
-            aria-label={`${item.title} live desk preview`}
+            aria-label={`${item.title} preview`}
           />
         ) : (
           <Image
@@ -69,19 +51,7 @@ function NewsPreview({
             }`}
           />
         )}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-[#0b1b3a]/20" />
-        <div className="absolute left-3 top-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm">
-            <span
-              className="h-1.5 w-1.5 animate-[pulseSoft_1.6s_ease-in-out_infinite] rounded-full bg-[#3dd68c]"
-              aria-hidden
-            />
-            {item.video ? "Live preview" : "Desk still"}
-          </span>
-          <span className="rounded-md bg-white/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/90 backdrop-blur-sm">
-            {item.region} · {item.category}
-          </span>
-        </div>
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-transparent" />
         <p className="absolute bottom-3 left-3 right-3 text-[12px] font-medium text-white/90">
           {item.source} · {item.time} CET
         </p>
@@ -93,7 +63,6 @@ function NewsPreview({
 function NewsRow({ item }: { item: NewsItem }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
-  const tone = IMPACT_TONE[item.impact];
 
   return (
     <li className="overflow-hidden rounded-2xl border border-[var(--line)] bg-surface-soft/50 transition hover:bg-surface-soft">
@@ -165,14 +134,7 @@ function NewsRow({ item }: { item: NewsItem }) {
           <div className="border-t border-[var(--line)] px-4 pb-4 pt-1">
             <NewsPreview item={item} active={open} />
 
-            <div className="mt-4 flex flex-wrap items-center gap-2">
-              <span
-                className={`rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ring-1 ring-inset ${tone.className}`}
-              >
-                {tone.label}
-              </span>
-              <span className="text-[12px] text-muted">{item.source}</span>
-            </div>
+            <p className="mt-4 text-[12px] text-muted">{item.source}</p>
 
             <p className="mt-3 text-[14px] leading-relaxed text-body">
               {item.detail}
