@@ -568,15 +568,15 @@ export function TopPicksPanel() {
                     ))}
                   </div>
 
-                  <ul className="mt-5 space-y-3">
+                  <ul className="mt-5 space-y-3.5 pb-1">
                     {filtered.map((pick) => {
                       const up = pick.changePct >= 0;
                       return (
-                        <li key={pick.id}>
+                        <li key={pick.id} className="rounded-2xl">
                           <button
                             type="button"
                             onClick={() => setSelected(pick)}
-                            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] px-4 py-3.5 text-left shadow-[0_10px_28px_rgba(0,0,0,0.35)] transition hover:border-white/18 hover:bg-white/[0.08] hover:shadow-[0_14px_36px_rgba(0,0,0,0.45)] active:scale-[0.99]"
+                            className="flex w-full items-center gap-3 rounded-2xl border border-white/14 bg-[#152848] px-4 py-3.5 text-left shadow-[0_4px_6px_rgba(0,0,0,0.25),0_12px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:-translate-y-0.5 hover:border-white/22 hover:bg-[#1a3258] hover:shadow-[0_6px_10px_rgba(0,0,0,0.3),0_18px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.12)] active:translate-y-0 active:scale-[0.99]"
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
