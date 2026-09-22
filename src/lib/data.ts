@@ -1,6 +1,5 @@
 export type NewsItem = {
   id: string;
-  region: "DE" | "EU";
   category: "Markets" | "Politics" | "Policy";
   title: string;
   summary: string;
@@ -88,45 +87,42 @@ export const YIELDS: YieldItem[] = [
 export const NEWS: NewsItem[] = [
   {
     id: "n1",
-    region: "DE",
     category: "Markets",
-    title: "DAX opens firmer as exporters catch a bid",
+    title: "European equities firm as exporters catch a bid",
     summary:
-      "German equities lift on softer euro and better-than-feared factory orders.",
-    source: "Frankfurt Desk",
+      "Stoxx and DAX lift on a softer euro and better-than-feared industrial prints across the bloc.",
+    source: "Europe Markets Desk",
     time: "08:12",
     cover: "/news/dax-floor.jpg",
     impact: "Constructive",
     detail:
-      "Cash equities in Frankfurt opened with a constructive tone as exporters led the advance. A softer euro against the dollar improved translation math for the DAX heavyweights, while factory orders printed less weak than consensus feared. Desk flow remains two-way into the London open, with cyclicals outperforming defensives on the day.",
+      "Cash equities across the euro area opened with a constructive tone as exporters led the advance. A softer euro against the dollar improved translation math for heavyweights in Frankfurt, Paris, and Milan, while factory orders printed less weak than consensus feared. Desk flow remains two-way into the London open, with cyclicals outperforming defensives on the day.",
     bullets: [
-      "Exporters lead the early session; banks and autos follow with moderate gains.",
+      "Exporters lead the early session; banks and industrials follow with moderate gains.",
       "EUR softness supports FX-sensitive earnings narratives into Q4.",
-      "Watch German 10y and Bund futures for confirmation of risk appetite.",
+      "Watch Bund futures and EURUSD for confirmation of risk appetite.",
     ],
   },
   {
     id: "n2",
-    region: "DE",
     category: "Politics",
-    title: "Berlin signals faster grid investment path",
+    title: "EU capitals signal faster grid investment path",
     summary:
-      "Coalition talks point to streamlined permitting for energy infrastructure.",
-    source: "Bundestag Watch",
+      "Member-state talks point to streamlined permitting for energy infrastructure across the Union.",
+    source: "EU Energy Watch",
     time: "09:40",
     cover: "/news/berlin-grid.jpg",
     impact: "Watch",
     detail:
-      "Coalition negotiators are aligning on a faster permitting track for high-voltage grid corridors and storage projects. The package is framed as industrial policy rather than a short-term stimulus — aimed at de-bottlenecking renewables build-out and lowering long-run power-price volatility for manufacturers.",
+      "Capitals are aligning on a faster permitting track for high-voltage grid corridors and storage projects. The package is framed as industrial policy rather than a short-term stimulus — aimed at de-bottlenecking renewables build-out and lowering long-run power-price volatility for manufacturers from the Nordics to the Mediterranean.",
     bullets: [
-      "Streamlined federal–Länder permitting for priority grid corridors.",
+      "Streamlined cross-border permitting for priority grid corridors.",
       "Utilities and EPC names most sensitive to legislative language.",
-      "Timeline still subject to coalition sequencing before year-end.",
+      "Timeline still subject to Council–Parliament sequencing before year-end.",
     ],
   },
   {
     id: "n3",
-    region: "EU",
     category: "Policy",
     title: "ECB holds; markets price a longer pause",
     summary:
@@ -146,7 +142,6 @@ export const NEWS: NewsItem[] = [
   },
   {
     id: "n4",
-    region: "EU",
     category: "Politics",
     title: "Brussels advances capital-markets package",
     summary:

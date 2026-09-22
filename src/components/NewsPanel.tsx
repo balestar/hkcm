@@ -86,7 +86,7 @@ function NewsRow({ item }: { item: NewsItem }) {
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
             <span className="rounded-md bg-ink/90 px-1.5 py-0.5 text-white">
-              {item.region}
+              {item.source}
             </span>
             <span>{item.category}</span>
             <span aria-hidden>·</span>
@@ -168,11 +168,8 @@ export function NewsPanel() {
         Markets &amp; policy
       </p>
       <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
-        Germany trading · EU finance &amp; politics
+        Finance and politics
       </h2>
-      <p className="mt-1.5 text-[13px] text-muted">
-        Tap a briefing for live desk preview and full detail.
-      </p>
 
       <ul className="mt-5 space-y-3">
         {NEWS.map((item) => (
