@@ -1,13 +1,18 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   PICK_CATEGORIES,
   TOP_PICKS,
   type PickCategory,
   type PickItem,
 } from "@/lib/data";
+import {
+  DUMMY_PROFILES,
+  formatAgo,
+  nextFeedDelayMs,
+} from "@/lib/dummyFeed";
 
 function Sparkline({
   series,
@@ -30,7 +35,7 @@ function Sparkline({
       return `${x.toFixed(1)},${y.toFixed(1)}`;
     })
     .join(" ");
-  const stroke = up ? "var(--gain, #1a9d6c)" : "var(--loss, #d14343)";
+  const stroke = up ? "#3dd68c" : "#f87171";
 
   return (
     <svg
@@ -66,8 +71,8 @@ function FullChart({ series, up }: { series: number[]; up: boolean }) {
   });
   const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x} ${y}`).join(" ");
   const area = `${line} L${pts[pts.length - 1][0]} ${H - pad} L${pts[0][0]} ${H - pad} Z`;
-  const stroke = up ? "#1a9d6c" : "#d14343";
-  const fill = up ? "rgba(26,157,108,0.12)" : "rgba(209,67,67,0.10)";
+  const stroke = up ? "#3dd68c" : "#f87171";
+  const fill = up ? "rgba(61,214,140,0.14)" : "rgba(248,113,113,0.12)";
 
   return (
     <svg
@@ -82,126 +87,227 @@ function FullChart({ series, up }: { series: number[]; up: boolean }) {
   );
 }
 
-const CHAT_LOADERS = [
-  "Loading BTC · 4H structure…",
-  "Loading DAX · session mid…",
-  "Loading Bund · duration map…",
-  "Loading SAP · cloud backlog…",
-  "Loading Stoxx · breadth scan…",
-];
+type ChatUser = {
+  id: string;
+  name: string;
+  avatar: string;
+  /** Prestige badge tier — only some users have one. */
+  badge: 2 | 3 | 4 | 5 | null;
+};
 
-function LiveChatPanel({
-  pick,
-  onClose,
-}: {
-  pick: PickItem;
-  onClose: () => void;
-}) {
-  const [msgs, setMsgs] = useState<
-    { id: string; from: "desk" | "you"; text: string }[]
-  >([
-    {
-      id: "1",
-      from: "desk",
-      text: `HKCM desk online — ask about ${pick.symbol} or request another chart.`,
-    },
-  ]);
+type ChatMsg = {
+  uid: string;
+  user: ChatUser;
+  text: string;
+  createdAt: number;
+};
+
+const PROFILE_POOL = DUMMY_PROFILES.filter(
+  (p) =>
+    p.platform === "linkedin" &&
+    p.avatar.startsWith("/profiles/li/") &&
+    !p.name.includes(".eth")
+);
+
+function randomBadge(): 2 | 3 | 4 | 5 | null {
+  const roll = Math.random();
+  if (roll < 0.55) return null;
+  if (roll < 0.7) return 2;
+  if (roll < 0.84) return 3;
+  if (roll < 0.94) return 4;
+  return 5;
+}
+
+function pickUser(avoidIds: Set<string>): ChatUser {
+  const pool = PROFILE_POOL.filter((p) => !avoidIds.has(p.id));
+  const list = pool.length ? pool : PROFILE_POOL;
+  const p = list[Math.floor(Math.random() * list.length)];
+  return {
+    id: p.id,
+    name: p.name.split(" ")[0] || p.name,
+    avatar: p.avatar,
+    badge: randomBadge(),
+  };
+}
+
+function commentForPick(pick: PickItem): string {
+  const dir = pick.changePct >= 0 ? "bid" : "soft";
+  const pct = `${pick.changePct >= 0 ? "+" : ""}${pick.changePct.toFixed(1)}%`;
+  const templates: string[] = [
+    `${pick.symbol} still constructive on the ${pick.kind.toLowerCase()} desk.`,
+    `Watching ${pick.name} — ${pct} on the session, not chasing.`,
+    `${pick.symbol}: prefer dips over FOMO into the US open.`,
+    `Desk lean on ${pick.symbol} stays ${dir === "bid" ? "long-biased" : "cautious"}.`,
+    `${pick.why.split(".")[0]}.`,
+    `${pick.name} structure intact — size light until confirmation.`,
+    `Anyone else seeing ${pick.symbol} reclaim the mid?`,
+    `${pick.symbol} flow looks orderly. Keeping risk tight.`,
+    `On ${pick.name}: ${pick.analyst.note.split(".")[0]}.`,
+    `${pick.kind} sleeve — ${pick.symbol} is the cleaner name today.`,
+    `Just marked ${pick.symbol} on my watchlist. Levels matter more than headlines.`,
+    `${pick.symbol} ${pct} — if we lose the open low I step aside.`,
+    `Quiet tape in ${pick.name}. No need to force it.`,
+    `${pick.symbol}: volume needs to confirm the next push.`,
+    `Agree with the desk note on ${pick.symbol} — shallow dips preferred.`,
+  ];
+  return templates[Math.floor(Math.random() * templates.length)];
+}
+
+function makeMsg(pick: PickItem, avoidIds: string[]): ChatMsg {
+  const user = pickUser(new Set(avoidIds));
+  const now = Date.now();
+  const age = Math.random() * 90_000;
+  return {
+    uid: `${user.id}-${now}-${Math.random().toString(36).slice(2, 7)}`,
+    user,
+    text: commentForPick(pick),
+    createdAt: now - age,
+  };
+}
+
+function LiveChatFeed({ pick }: { pick: PickItem }) {
+  const [items, setItems] = useState<ChatMsg[]>([]);
+  const [now, setNow] = useState(() => Date.now());
   const [draft, setDraft] = useState("");
-  const [loadingCharts, setLoadingCharts] = useState(CHAT_LOADERS.slice(0, 2));
+  const timerRef = useRef<number | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
+
+  // Reset feed when the selected pick changes
+  useEffect(() => {
+    const seed: ChatMsg[] = [];
+    for (let i = 0; i < 5; i++) {
+      seed.push(makeMsg(pick, seed.map((s) => s.user.id)));
+    }
+    setItems(seed.sort((a, b) => b.createdAt - a.createdAt));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on pick identity
+  }, [pick.id]);
 
   useEffect(() => {
-    let i = 2;
-    const id = window.setInterval(() => {
-      setLoadingCharts((prev) => {
-        const next = CHAT_LOADERS[i % CHAT_LOADERS.length];
-        i += 1;
-        return [...prev.slice(-2), next];
-      });
-    }, 2800);
-    return () => window.clearInterval(id);
+    const tick = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(tick);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const schedule = () => {
+      const delay = Math.min(nextFeedDelayMs() / 8, 45_000) + Math.random() * 25_000;
+      timerRef.current = window.setTimeout(() => {
+        if (cancelled) return;
+        setItems((prev) => {
+          const t = Date.now();
+          // ~25%: nudge an existing timestamp only (feels alive without spam)
+          if (Math.random() < 0.25 && prev.length >= 3) {
+            const i = Math.floor(Math.random() * prev.length);
+            return prev
+              .map((m, idx) =>
+                idx === i ? { ...m, createdAt: t - Math.random() * 20_000 } : m
+              )
+              .sort((a, b) => b.createdAt - a.createdAt);
+          }
+          const fresh = makeMsg(
+            pick,
+            prev.slice(0, 4).map((m) => m.user.id)
+          );
+          fresh.createdAt = t;
+          return [fresh, ...prev].slice(0, 8);
+        });
+        setNow(Date.now());
+        schedule();
+      }, delay);
+    };
+    schedule();
+    return () => {
+      cancelled = true;
+      if (timerRef.current != null) window.clearTimeout(timerRef.current);
+    };
+  }, [pick]);
 
   const send = () => {
     const text = draft.trim();
     if (!text) return;
     setDraft("");
-    setMsgs((m) => [
-      ...m,
-      { id: String(Date.now()), from: "you", text },
+    setItems((prev) => [
       {
-        id: String(Date.now() + 1),
-        from: "desk",
-        text: `Noted on ${pick.symbol}. Pulling related charts — other markets are loading…`,
+        uid: `you-${Date.now()}`,
+        user: { id: "you", name: "You", avatar: "", badge: null },
+        text,
+        createdAt: Date.now(),
       },
-    ]);
+      ...prev,
+    ].slice(0, 10));
   };
 
   return (
-    <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--line)] bg-surface-soft/60">
-      <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-        <div>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted">
-            Live chat
-          </p>
-          <p className="text-[13px] text-body">Desk · {pick.symbol}</p>
-        </div>
+    <div className="mt-6 overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04]">
+      <div className="border-b border-white/10 px-4 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+          Live chat
+        </p>
+        <p className="mt-0.5 text-[13px] text-white/65">
+          Conversation on {pick.symbol}
+        </p>
+      </div>
+
+      <ul ref={listRef} className="max-h-64 space-y-0 overflow-y-auto">
+        {items.map((m) => (
+          <li
+            key={m.uid}
+            className="flex gap-3 border-b border-white/8 px-4 py-3 last:border-0"
+          >
+            <div className="relative h-9 w-9 shrink-0">
+              {m.user.avatar ? (
+                <Image
+                  src={m.user.avatar}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="h-9 w-9 rounded-full object-cover ring-1 ring-white/15"
+                />
+              ) : (
+                <div className="grid h-9 w-9 place-items-center rounded-full bg-brand/80 text-[12px] font-semibold text-white">
+                  Y
+                </div>
+              )}
+              {m.user.badge != null && (
+                <span className="absolute -bottom-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[9px] font-bold text-white ring-2 ring-[#0b1b3a]">
+                  {m.user.badge}
+                </span>
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-baseline gap-x-2">
+                <span className="text-[13px] font-semibold text-white">
+                  {m.user.name}
+                </span>
+                <span className="text-[11px] text-white/35">
+                  {formatAgo(m.createdAt, now)}
+                </span>
+              </div>
+              <p className="mt-0.5 text-[13px] leading-relaxed text-white/70">
+                {m.text}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex gap-2 border-t border-white/10 px-4 py-3">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") send();
+          }}
+          placeholder={`Comment on ${pick.symbol}…`}
+          className="flex-1 rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[14px] text-white outline-none placeholder:text-white/35 focus:border-brand/50"
+        />
         <button
           type="button"
-          onClick={onClose}
-          className="text-[13px] font-medium text-body transition hover:text-ink"
+          onClick={send}
+          className="rounded-xl bg-brand px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-brand-deep"
         >
-          Close
+          Send
         </button>
-      </div>
-
-      <div className="max-h-48 space-y-2 overflow-y-auto px-4 py-3">
-        {msgs.map((m) => (
-          <div
-            key={m.id}
-            className={`max-w-[85%] rounded-2xl px-3 py-2 text-[13px] leading-relaxed ${
-              m.from === "you"
-                ? "ml-auto bg-brand text-white"
-                : "bg-surface-elevated text-ink"
-            }`}
-          >
-            {m.text}
-          </div>
-        ))}
-      </div>
-
-      <div className="border-t border-[var(--line)] px-4 py-3">
-        <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-          Other charts loading…
-        </p>
-        <ul className="mb-3 space-y-1">
-          {loadingCharts.map((line) => (
-            <li
-              key={line}
-              className="flex items-center gap-2 text-[12px] text-body"
-            >
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand" />
-              {line}
-            </li>
-          ))}
-        </ul>
-        <div className="flex gap-2">
-          <input
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") send();
-            }}
-            placeholder="Ask the desk…"
-            className="flex-1 rounded-xl border border-[var(--line)] bg-surface px-3 py-2.5 text-[14px] text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-          />
-          <button
-            type="button"
-            onClick={send}
-            className="rounded-xl bg-brand px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-brand-deep"
-          >
-            Send
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -216,16 +322,19 @@ function PickDetail({
 }) {
   const up = pick.changePct >= 0;
   const [votes, setVotes] = useState(pick.votes);
-  const [chatOpen, setChatOpen] = useState(false);
   const total = votes.up + votes.down;
   const upPct = total ? Math.round((votes.up / total) * 100) : 0;
+
+  useEffect(() => {
+    setVotes(pick.votes);
+  }, [pick.id, pick.votes]);
 
   return (
     <div className="animate-rise">
       <button
         type="button"
         onClick={onBack}
-        className="text-[13px] font-medium text-body transition hover:text-ink"
+        className="text-[13px] font-medium text-white/60 transition hover:text-white"
       >
         ← All picks
       </button>
@@ -233,47 +342,47 @@ function PickDetail({
       <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="font-display text-[1.45rem] tracking-[-0.03em] text-ink">
+            <h3 className="font-display text-[1.45rem] tracking-[-0.03em] text-white">
               {pick.symbol}
             </h3>
-            <span className="rounded-md bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+            <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
               {pick.kind}
             </span>
           </div>
-          <p className="mt-0.5 text-[14px] text-body">{pick.name}</p>
+          <p className="mt-0.5 text-[14px] text-white/55">{pick.name}</p>
         </div>
         <div className="text-right">
-          <p className="text-[1.15rem] font-semibold text-ink">{pick.price}</p>
-          <p className={`text-[14px] font-semibold ${up ? "text-gain" : "text-loss"}`}>
+          <p className="text-[1.15rem] font-semibold text-white">{pick.price}</p>
+          <p className={`text-[14px] font-semibold ${up ? "text-[#3dd68c]" : "text-[#f87171]"}`}>
             {up ? "+" : ""}
             {pick.changePct.toFixed(1)}%
           </p>
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)] bg-surface-soft/40 p-3 sm:p-4">
+      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
         <FullChart series={pick.series} up={up} />
       </div>
 
       <div className="mt-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
           Why we picked it
         </p>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink">{pick.why}</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-white/85">{pick.why}</p>
       </div>
 
-      <div className="mt-5 flex gap-3 rounded-2xl border border-[var(--line)] bg-surface-elevated p-4">
+      <div className="mt-5 flex gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
         <Image
           src={pick.analyst.image}
           alt={pick.analyst.name}
           width={48}
           height={48}
-          className="h-12 w-12 rounded-full object-cover"
+          className="h-12 w-12 rounded-full object-cover ring-1 ring-white/15"
         />
         <div>
-          <p className="text-[14px] font-semibold text-ink">{pick.analyst.name}</p>
-          <p className="text-[12px] text-muted">{pick.analyst.role}</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-body">
+          <p className="text-[14px] font-semibold text-white">{pick.analyst.name}</p>
+          <p className="text-[12px] text-white/45">{pick.analyst.role}</p>
+          <p className="mt-2 text-[14px] leading-relaxed text-white/70">
             “{pick.analyst.note}”
           </p>
         </div>
@@ -281,16 +390,16 @@ function PickDetail({
 
       <div className="mt-5">
         <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
             Desk votes
           </p>
-          <p className="text-[13px] text-body">
+          <p className="text-[13px] text-white/55">
             {votes.up} up · {votes.down} down · {upPct}% constructive
           </p>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-surface-soft">
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
           <div
-            className="h-full rounded-full bg-gain transition-all"
+            className="h-full rounded-full bg-[#3dd68c] transition-all"
             style={{ width: `${upPct}%` }}
           />
         </div>
@@ -298,31 +407,21 @@ function PickDetail({
           <button
             type="button"
             onClick={() => setVotes((v) => ({ ...v, up: v.up + 1 }))}
-            className="rounded-full border border-[var(--line)] bg-surface-elevated px-4 py-2 text-[13px] font-semibold text-gain transition hover:bg-surface-soft"
+            className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[13px] font-semibold text-[#3dd68c] transition hover:bg-white/10"
           >
             ▲ Agree
           </button>
           <button
             type="button"
             onClick={() => setVotes((v) => ({ ...v, down: v.down + 1 }))}
-            className="rounded-full border border-[var(--line)] bg-surface-elevated px-4 py-2 text-[13px] font-semibold text-loss transition hover:bg-surface-soft"
+            className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[13px] font-semibold text-[#f87171] transition hover:bg-white/10"
           >
             ▼ Disagree
           </button>
         </div>
       </div>
 
-      {!chatOpen ? (
-        <button
-          type="button"
-          onClick={() => setChatOpen(true)}
-          className="mt-6 w-full rounded-full bg-brand px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(59,110,245,0.28)] transition hover:bg-brand-deep"
-        >
-          Live chat with the desk
-        </button>
-      ) : (
-        <LiveChatPanel pick={pick} onClose={() => setChatOpen(false)} />
-      )}
+      <LiveChatFeed pick={pick} />
     </div>
   );
 }
@@ -420,7 +519,7 @@ export function TopPicksPanel() {
 
       {open && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#050b18]/55 p-0 backdrop-blur-sm sm:items-center sm:p-4"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#050b18]/65 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="top-picks-title"
@@ -430,17 +529,17 @@ export function TopPicksPanel() {
           }}
         >
           <div
-            className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[22px] border border-[var(--line)] bg-surface-elevated shadow-[0_28px_80px_rgba(5,12,28,0.35)] sm:rounded-[22px]"
+            className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[22px] border border-white/12 bg-[#0b1b3a] text-white shadow-[0_28px_80px_rgba(5,12,28,0.55)] sm:rounded-[22px]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-4 sm:px-6">
+            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
                   HKCM desk
                 </p>
                 <h2
                   id="top-picks-title"
-                  className="mt-0.5 font-display text-[1.35rem] tracking-[-0.03em] text-ink"
+                  className="mt-0.5 font-display text-[1.35rem] tracking-[-0.03em] text-white"
                 >
                   {selected ? selected.symbol : "Top picks"}
                 </h2>
@@ -451,7 +550,7 @@ export function TopPicksPanel() {
                   setOpen(false);
                   setSelected(null);
                 }}
-                className="rounded-full border border-[var(--line)] px-3 py-1.5 text-[13px] font-medium text-body transition hover:text-ink"
+                className="rounded-full border border-white/15 px-3 py-1.5 text-[13px] font-medium text-white/70 transition hover:text-white"
               >
                 Close
               </button>
@@ -471,8 +570,8 @@ export function TopPicksPanel() {
                       onClick={() => setCategory("All")}
                       className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition ${
                         category === "All"
-                          ? "bg-ink text-white"
-                          : "bg-surface-soft text-body hover:text-ink"
+                          ? "bg-white text-[#0b1b3a]"
+                          : "bg-white/10 text-white/70 hover:text-white"
                       }`}
                     >
                       All
@@ -484,8 +583,8 @@ export function TopPicksPanel() {
                         onClick={() => setCategory(c)}
                         className={`rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition ${
                           category === c
-                            ? "bg-ink text-white"
-                            : "bg-surface-soft text-body hover:text-ink"
+                            ? "bg-white text-[#0b1b3a]"
+                            : "bg-white/10 text-white/70 hover:text-white"
                         }`}
                       >
                         {c}
@@ -493,7 +592,7 @@ export function TopPicksPanel() {
                     ))}
                   </div>
 
-                  <ul className="mt-5 divide-y divide-[var(--line)]">
+                  <ul className="mt-5 divide-y divide-white/10">
                     {filtered.map((pick) => {
                       const up = pick.changePct >= 0;
                       return (
@@ -505,24 +604,24 @@ export function TopPicksPanel() {
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-[15px] font-semibold text-ink">
+                                <span className="text-[15px] font-semibold text-white">
                                   {pick.symbol}
                                 </span>
-                                <span className="rounded-md bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
+                                <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/55">
                                   {pick.kind}
                                 </span>
                               </div>
-                              <p className="mt-0.5 truncate text-[13px] text-body">
+                              <p className="mt-0.5 truncate text-[13px] text-white/50">
                                 {pick.name}
                               </p>
                             </div>
                             <Sparkline series={pick.series} up={up} width={96} height={36} />
                             <div className="w-[78px] shrink-0 text-right">
-                              <p className="text-[14px] font-semibold text-ink">
+                              <p className="text-[14px] font-semibold text-white">
                                 {pick.price}
                               </p>
                               <p
-                                className={`text-[12px] font-semibold ${up ? "text-gain" : "text-loss"}`}
+                                className={`text-[12px] font-semibold ${up ? "text-[#3dd68c]" : "text-[#f87171]"}`}
                               >
                                 {up ? "+" : ""}
                                 {pick.changePct.toFixed(1)}%

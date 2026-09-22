@@ -1,4 +1,203 @@
-import { NEWS } from "@/lib/data";
+"use client";
+
+import Image from "next/image";
+import { useEffect, useId, useRef, useState } from "react";
+import { NEWS, type NewsItem } from "@/lib/data";
+
+const IMPACT_TONE: Record<
+  NewsItem["impact"],
+  { label: string; className: string }
+> = {
+  Watch: {
+    label: "Watch",
+    className: "bg-amber-500/15 text-amber-800 ring-amber-500/25",
+  },
+  Constructive: {
+    label: "Constructive",
+    className: "bg-emerald-500/15 text-emerald-800 ring-emerald-500/25",
+  },
+  Cautious: {
+    label: "Cautious",
+    className: "bg-sky-500/15 text-sky-900 ring-sky-500/25",
+  },
+};
+
+function NewsPreview({
+  item,
+  active,
+}: {
+  item: NewsItem;
+  active: boolean;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el || !item.video) return;
+    if (active) {
+      void el.play().catch(() => {});
+    } else {
+      el.pause();
+      el.currentTime = 0;
+    }
+  }, [active, item.video]);
+
+  return (
+    <div className="relative mt-4 overflow-hidden rounded-xl bg-[#0b1b3a]">
+      <div className="relative aspect-[16/9] w-full">
+        {item.video ? (
+          <video
+            ref={videoRef}
+            className="absolute inset-0 h-full w-full object-cover"
+            src={item.video}
+            poster={item.cover}
+            muted
+            playsInline
+            loop
+            preload="metadata"
+            aria-label={`${item.title} live desk preview`}
+          />
+        ) : (
+          <Image
+            src={item.cover}
+            alt=""
+            fill
+            unoptimized
+            sizes="(max-width: 768px) 100vw, 640px"
+            className={`object-cover transition-transform duration-[1.4s] ease-out ${
+              active ? "scale-105" : "scale-100"
+            }`}
+          />
+        )}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-[#0b1b3a]/20" />
+        <div className="absolute left-3 top-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-black/55 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-white backdrop-blur-sm">
+            <span
+              className="h-1.5 w-1.5 animate-[pulseSoft_1.6s_ease-in-out_infinite] rounded-full bg-[#3dd68c]"
+              aria-hidden
+            />
+            {item.video ? "Live preview" : "Desk still"}
+          </span>
+          <span className="rounded-md bg-white/12 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/90 backdrop-blur-sm">
+            {item.region} · {item.category}
+          </span>
+        </div>
+        <p className="absolute bottom-3 left-3 right-3 text-[12px] font-medium text-white/90">
+          {item.source} · {item.time} CET
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function NewsRow({ item }: { item: NewsItem }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const tone = IMPACT_TONE[item.impact];
+
+  return (
+    <li className="overflow-hidden rounded-2xl border border-[var(--line)] bg-surface-soft/50 transition hover:bg-surface-soft">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls={panelId}
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
+      >
+        <span className="relative mt-0.5 hidden h-14 w-20 shrink-0 overflow-hidden rounded-lg sm:block">
+          <Image
+            src={item.cover}
+            alt=""
+            fill
+            unoptimized
+            sizes="80px"
+            className="object-cover"
+          />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
+            <span className="rounded-md bg-ink/90 px-1.5 py-0.5 text-white">
+              {item.region}
+            </span>
+            <span>{item.category}</span>
+            <span aria-hidden>·</span>
+            <span>{item.time}</span>
+            {item.video ? (
+              <span className="rounded-md bg-[#0b1b3a] px-1.5 py-0.5 text-[10px] text-white">
+                Video
+              </span>
+            ) : null}
+          </span>
+          <span className="mt-2 block text-[15px] font-semibold leading-snug text-ink">
+            {item.title}
+          </span>
+          <span className="mt-1 block text-[13px] leading-relaxed text-body">
+            {item.summary}
+          </span>
+        </span>
+        <span
+          className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-white text-ink transition-transform duration-300 ${
+            open ? "rotate-180" : ""
+          }`}
+          aria-hidden
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d="M3.5 5.25L7 8.75L10.5 5.25"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </button>
+
+      <div
+        id={panelId}
+        role="region"
+        aria-label={item.title}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div className="border-t border-[var(--line)] px-4 pb-4 pt-1">
+            <NewsPreview item={item} active={open} />
+
+            <div className="mt-4 flex flex-wrap items-center gap-2">
+              <span
+                className={`rounded-md px-2 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] ring-1 ring-inset ${tone.className}`}
+              >
+                {tone.label}
+              </span>
+              <span className="text-[12px] text-muted">{item.source}</span>
+            </div>
+
+            <p className="mt-3 text-[14px] leading-relaxed text-body">
+              {item.detail}
+            </p>
+
+            <ul className="mt-3 space-y-2">
+              {item.bullets.map((b) => (
+                <li
+                  key={b}
+                  className="flex gap-2 text-[13px] leading-snug text-ink/90"
+                >
+                  <span
+                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#3b6ef5]"
+                    aria-hidden
+                  />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
 
 export function NewsPanel() {
   return (
@@ -9,29 +208,13 @@ export function NewsPanel() {
       <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
         Germany trading · EU finance &amp; politics
       </h2>
+      <p className="mt-1.5 text-[13px] text-muted">
+        Tap a briefing for live desk preview and full detail.
+      </p>
 
       <ul className="mt-5 space-y-3">
         {NEWS.map((item) => (
-          <li
-            key={item.id}
-            className="rounded-2xl border border-[var(--line)] bg-surface-soft/50 px-4 py-3.5 transition hover:bg-surface-soft"
-          >
-            <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
-              <span className="rounded-md bg-ink/90 px-1.5 py-0.5 text-white">
-                {item.region}
-              </span>
-              <span>{item.category}</span>
-              <span>·</span>
-              <span>{item.time}</span>
-            </div>
-            <p className="mt-2 text-[15px] font-semibold leading-snug text-ink">
-              {item.title}
-            </p>
-            <p className="mt-1 text-[13px] leading-relaxed text-body">
-              {item.summary}
-            </p>
-            <p className="mt-2 text-[12px] text-muted">{item.source}</p>
-          </li>
+          <NewsRow key={item.id} item={item} />
         ))}
       </ul>
     </section>

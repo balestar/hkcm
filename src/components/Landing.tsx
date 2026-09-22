@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import { AboutUs } from "@/components/AboutUs";
@@ -13,17 +13,6 @@ import {
   formatPrice,
   type ChartAnalysis,
 } from "@/lib/landingContent";
-import {
-  commentTtlMs,
-  formatAgo,
-  nextFeedDelayMs,
-  randomDeskComment,
-  type DeskComment,
-} from "@/lib/dummyFeed";
-import {
-  TeamMemberModal,
-  type ModalPerson,
-} from "@/components/TeamMemberModal";
 
 function AnalysisChart({
   values,
@@ -222,207 +211,6 @@ function AnalysisChart({
         </text>
       ))}
     </svg>
-  );
-}
-
-const AVATAR_TONES = [
-  "bg-[#1e3a5f]",
-  "bg-[#1a4a3c]",
-  "bg-[#3d2a4f]",
-  "bg-[#4a3728]",
-  "bg-[#1f3d4a]",
-  "bg-[#3a2f1e]",
-  "bg-[#2a3550]",
-  "bg-[#3b2d38]",
-];
-
-function avatarTone(id: string) {
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
-  return AVATAR_TONES[h % AVATAR_TONES.length];
-}
-
-type FeedItem = DeskComment & {
-  uid: string;
-  createdAt: number;
-  expiresAt: number;
-};
-
-function makeFeedItem(
-  seed?: number,
-  avoid?: { ids: string[]; texts: string[] }
-): FeedItem {
-  const c =
-    typeof seed === "number"
-      ? randomDeskComment({ avoidIds: avoid?.ids, usedTexts: avoid?.texts })
-      : randomDeskComment({ avoidIds: avoid?.ids, usedTexts: avoid?.texts });
-  const now = Date.now();
-  // Stagger initial ages so the roll doesn't look freshly spawned
-  const ageBias =
-    typeof seed === "number" ? seed * 22_000 + Math.random() * 40_000 : 0;
-  const createdAt = now - ageBias;
-  return {
-    ...c,
-    uid: `${c.id}-${createdAt}-${Math.random().toString(36).slice(2, 7)}`,
-    createdAt,
-    expiresAt: createdAt + commentTtlMs(),
-  };
-}
-
-function DeskCommentsFeed() {
-  const [items, setItems] = useState<FeedItem[]>(() => {
-    const out: FeedItem[] = [];
-    for (let i = 0; i < 5; i++) {
-      out.push(
-        makeFeedItem(i + 1, {
-          ids: out.map((x) => x.id),
-          texts: out.map((x) => x.text),
-        })
-      );
-    }
-    return out.sort((a, b) => b.createdAt - a.createdAt);
-  });
-  const [now, setNow] = useState(() => Date.now());
-  const [modalIndex, setModalIndex] = useState<number | null>(null);
-  const timerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    const tickAgo = window.setInterval(() => setNow(Date.now()), 20_000);
-    return () => window.clearInterval(tickAgo);
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const schedule = () => {
-      const delay = nextFeedDelayMs();
-      timerRef.current = window.setTimeout(() => {
-        if (cancelled) return;
-        setItems((prev) => {
-          const t = Date.now();
-          // Drop expired first
-          let next = prev.filter((c) => c.expiresAt > t);
-
-          // ~30% of ticks: no new post — only nudge a mid-row timestamp (anti-pattern)
-          if (Math.random() < 0.3 && next.length === 5) {
-            const i = 1 + Math.floor(Math.random() * Math.min(3, next.length - 1));
-            next = next.map((c, idx) =>
-              idx === i
-                ? {
-                    ...c,
-                    createdAt: t - Math.random() * 50_000,
-                    expiresAt: t + commentTtlMs(),
-                  }
-                : c
-            );
-            return [...next].sort((a, b) => b.createdAt - a.createdAt);
-          }
-
-          // Make room if full: drop the oldest (or a random mid row 25% of time)
-          if (next.length >= 5) {
-            next = [...next].sort((a, b) => a.createdAt - b.createdAt);
-            if (Math.random() < 0.25 && next.length > 2) {
-              const dropAt = 1 + Math.floor(Math.random() * (next.length - 1));
-              next.splice(dropAt, 1);
-            } else {
-              next = next.slice(1);
-            }
-          }
-
-          while (next.length < 5) {
-            const fresh = makeFeedItem(undefined, {
-              ids: next.map((x) => x.id),
-              texts: next.map((x) => x.text),
-            });
-            fresh.createdAt = t;
-            fresh.expiresAt = t + commentTtlMs();
-            next = [fresh, ...next];
-          }
-
-          return next
-            .slice(0, 5)
-            .sort((a, b) => b.createdAt - a.createdAt);
-        });
-        setNow(Date.now());
-        schedule();
-      }, delay);
-    };
-
-    schedule();
-    return () => {
-      cancelled = true;
-      if (timerRef.current != null) window.clearTimeout(timerRef.current);
-    };
-  }, []);
-
-  const modalPeople: ModalPerson[] = items.map((c) => ({
-    id: c.uid,
-    name: c.name,
-    role: c.handle.replace(/^\/in\//, "@"),
-    image: c.avatar,
-    initials: c.initials,
-    linkedin: c.linkedin || "https://www.linkedin.com/company/hkcm",
-    quote: c.text,
-  }));
-
-  return (
-    <>
-      <ul className="space-y-3">
-        {items.map((c, idx) => (
-          <li key={c.uid}>
-            <button
-              type="button"
-              onClick={() => setModalIndex(idx)}
-              className={`flex w-full gap-3 rounded-2xl border border-white/12 bg-white/[0.06] px-4 py-3.5 text-left shadow-[0_8px_24px_rgba(5,12,28,0.18)] backdrop-blur-sm transition hover:bg-white/[0.09] ${
-                idx === 0 && formatAgo(c.createdAt, now) === "just now"
-                  ? "animate-rise"
-                  : ""
-              }`}
-            >
-              <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-full ring-1 ring-white/15">
-                {c.avatar ? (
-                  <Image
-                    src={c.avatar}
-                    alt=""
-                    fill
-                    className="object-cover object-top"
-                    sizes="44px"
-                  />
-                ) : (
-                  <div
-                    className={`grid h-full w-full place-items-center text-[13px] font-semibold text-white/90 ${avatarTone(c.id)}`}
-                  >
-                    {c.initials}
-                  </div>
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                  <span className="text-[14px] font-semibold text-white">{c.name}</span>
-                  <span className="text-[12px] text-white/40">
-                    @{c.handle.replace(/^\/in\//, "").replace(/^@/, "")}
-                  </span>
-                  <span className="text-[12px] text-white/30">
-                    · {formatAgo(c.createdAt, now)}
-                  </span>
-                </div>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-white/72">{c.text}</p>
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
-
-      {modalIndex != null && (
-        <TeamMemberModal
-          people={modalPeople}
-          index={modalIndex}
-          onClose={() => setModalIndex(null)}
-          onChange={setModalIndex}
-          variant="avatar"
-        />
-      )}
-    </>
   );
 }
 
@@ -660,17 +448,6 @@ export function Landing() {
 
         <AnalysisCarousel slides={CHART_ANALYSES} />
 
-        <section className="animate-rise-delay-3">
-          <div className="mb-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
-              Desk comments
-            </p>
-            <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
-              Market conversation
-            </h2>
-          </div>
-          <DeskCommentsFeed />
-        </section>
       </main>
 
       <div className="relative z-10">

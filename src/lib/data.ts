@@ -6,6 +6,16 @@ export type NewsItem = {
   summary: string;
   source: string;
   time: string;
+  /** Cover still used in the list + image previews. */
+  cover: string;
+  /** Optional muted autoplay loop for desk-style live preview. */
+  video?: string;
+  /** Longer brief shown when the item is expanded. */
+  detail: string;
+  /** Key takeaways under the preview. */
+  bullets: string[];
+  /** Soft impact tag for traders. */
+  impact: "Watch" | "Constructive" | "Cautious";
 };
 
 export type PickCategory =
@@ -85,6 +95,15 @@ export const NEWS: NewsItem[] = [
       "German equities lift on softer euro and better-than-feared factory orders.",
     source: "Frankfurt Desk",
     time: "08:12",
+    cover: "/news/dax-floor.jpg",
+    impact: "Constructive",
+    detail:
+      "Cash equities in Frankfurt opened with a constructive tone as exporters led the advance. A softer euro against the dollar improved translation math for the DAX heavyweights, while factory orders printed less weak than consensus feared. Desk flow remains two-way into the London open, with cyclicals outperforming defensives on the day.",
+    bullets: [
+      "Exporters lead the early session; banks and autos follow with moderate gains.",
+      "EUR softness supports FX-sensitive earnings narratives into Q4.",
+      "Watch German 10y and Bund futures for confirmation of risk appetite.",
+    ],
   },
   {
     id: "n2",
@@ -95,6 +114,15 @@ export const NEWS: NewsItem[] = [
       "Coalition talks point to streamlined permitting for energy infrastructure.",
     source: "Bundestag Watch",
     time: "09:40",
+    cover: "/news/berlin-grid.jpg",
+    impact: "Watch",
+    detail:
+      "Coalition negotiators are aligning on a faster permitting track for high-voltage grid corridors and storage projects. The package is framed as industrial policy rather than a short-term stimulus — aimed at de-bottlenecking renewables build-out and lowering long-run power-price volatility for manufacturers.",
+    bullets: [
+      "Streamlined federal–Länder permitting for priority grid corridors.",
+      "Utilities and EPC names most sensitive to legislative language.",
+      "Timeline still subject to coalition sequencing before year-end.",
+    ],
   },
   {
     id: "n3",
@@ -105,6 +133,16 @@ export const NEWS: NewsItem[] = [
       "Front-end rates steady as policymakers keep optionality into year-end.",
     source: "Eurozone Macro",
     time: "10:05",
+    cover: "/news/ecb-policy.jpg",
+    video: "/news/ecb-brief.mp4",
+    impact: "Cautious",
+    detail:
+      "The ECB left key rates unchanged and kept the door open on both sides of the reaction function. Front-end OIS barely moved as traders extended the pause narrative into year-end. Guidance stressed data dependence — wages, services inflation, and credit conditions remain the near-term map for any cut path.",
+    bullets: [
+      "Deposit rate on hold; optionality retained into the next two meetings.",
+      "Markets lean longer-pause; curve still sensitive to wage prints.",
+      "EUR crosses quiet; watch EURUSD for any hawkish residual in the Q&A.",
+    ],
   },
   {
     id: "n4",
@@ -115,6 +153,15 @@ export const NEWS: NewsItem[] = [
       "Draft rules aim to deepen retail participation across member states.",
     source: "EU Policy Brief",
     time: "11:22",
+    cover: "/news/brussels-markets.jpg",
+    impact: "Constructive",
+    detail:
+      "The Commission’s capital-markets package advances disclosure simplification and cross-border distribution rules designed to pull more household savings into listed equities and funds. Exchanges, asset managers, and retail brokers are the clearest second-order beneficiaries if member-state adoption stays on schedule.",
+    bullets: [
+      "Retail participation and simplified KIDs are the political priorities.",
+      "Cross-border fund passporting language is the key commercial lever.",
+      "Legislative calendar still points to multi-quarter implementation.",
+    ],
   },
 ];
 

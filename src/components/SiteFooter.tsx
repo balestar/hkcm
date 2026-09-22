@@ -21,32 +21,20 @@ type SiteFooterProps = {
   variant?: "dark" | "light";
 };
 
-export function SiteFooter({ variant = "dark" }: SiteFooterProps) {
-  const dark = variant === "dark";
-
+export function SiteFooter({ variant: _variant = "dark" }: SiteFooterProps) {
   return (
-    <footer
-      className={
-        dark
-          ? "border-t border-white/10 bg-[#07090d] text-white"
-          : "border-t border-[var(--line)] bg-surface-elevated text-ink"
-      }
-    >
+    <footer className="border-t border-white/10 bg-[#0b1b3a] text-white">
       <div className="mx-auto max-w-6xl px-5 py-12 sm:px-8 sm:py-14">
         <div className="grid gap-10 sm:grid-cols-[1fr_auto] sm:items-start sm:gap-12">
           <div>
             <Image
-              src={dark ? "/logo-hkcm-light.png" : "/logo-hkcm.png"}
+              src="/logo-hkcm-light.png"
               alt="HKCM"
               width={140}
               height={36}
               className="h-8 w-auto"
             />
-            <address
-              className={`mt-5 not-italic text-[14px] leading-relaxed ${
-                dark ? "text-white/55" : "text-body"
-              }`}
-            >
+            <address className="mt-5 not-italic text-[14px] leading-relaxed text-white/55">
               Hasenbergsteige 5
               <br />
               70178 Stuttgart
@@ -55,22 +43,14 @@ export function SiteFooter({ variant = "dark" }: SiteFooterProps) {
             </address>
             <a
               href="tel:+497112200810"
-              className={`mt-3 inline-block text-[14px] font-medium transition ${
-                dark
-                  ? "text-white/80 hover:text-white"
-                  : "text-ink hover:opacity-70"
-              }`}
+              className="mt-3 inline-block text-[14px] font-medium text-white/80 transition hover:text-white"
             >
               +49 711 2200 81 0
             </a>
           </div>
 
           <div>
-            <p
-              className={`text-[12px] font-semibold uppercase tracking-[0.14em] ${
-                dark ? "text-white/45" : "text-body"
-              }`}
-            >
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-white/45">
               Folge uns auf
             </p>
             <ul className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
@@ -80,11 +60,7 @@ export function SiteFooter({ variant = "dark" }: SiteFooterProps) {
                     href={s.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className={`text-[14px] transition ${
-                      dark
-                        ? "text-white/75 hover:text-white"
-                        : "text-ink hover:opacity-70"
-                    }`}
+                    className="text-[14px] text-white/75 transition hover:text-white"
                   >
                     {s.label}
                   </a>
@@ -94,12 +70,8 @@ export function SiteFooter({ variant = "dark" }: SiteFooterProps) {
           </div>
         </div>
 
-        <div
-          className={`mt-10 flex flex-col gap-4 border-t pt-6 sm:flex-row sm:items-center sm:justify-between ${
-            dark ? "border-white/10" : "border-[var(--line)]"
-          }`}
-        >
-          <p className={`text-[13px] ${dark ? "text-white/40" : "text-body"}`}>
+        <div className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[13px] text-white/40">
             © 2026 HKCM - Alle Rechte vorbehalten
           </p>
           <nav className="flex flex-wrap gap-x-5 gap-y-2">
@@ -109,11 +81,7 @@ export function SiteFooter({ variant = "dark" }: SiteFooterProps) {
                 href={l.href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`text-[13px] transition ${
-                  dark
-                    ? "text-white/55 hover:text-white"
-                    : "text-body hover:text-ink"
-                }`}
+                className="text-[13px] text-white/55 transition hover:text-white"
               >
                 {l.label}
               </a>
