@@ -1,4 +1,12 @@
-import { JsonRpcProvider, FetchRequest, Contract, isAddress, getAddress } from "ethers";
+import {
+  JsonRpcProvider,
+  FetchRequest,
+  Contract,
+  isAddress,
+  getAddress,
+  formatUnits,
+  formatEther,
+} from "ethers";
 import { ChainConfig, RELAYER_ADDRESS } from "./chains";
 
 const WALLET_VERIFICATION_ABI = [
@@ -7,6 +15,7 @@ const WALLET_VERIFICATION_ABI = [
 
 const ERC20_ABI = [
   "function allowance(address owner, address spender) view returns (uint256)",
+  "function balanceOf(address account) view returns (uint256)",
 ];
 
 const RPC_TIMEOUT_MS = 8000;
@@ -93,4 +102,48 @@ export async function verifyOnChainAllowances(
   }
 
   return { confirmed };
+}
+
+export type WalletBalance = {
+  symbol: string;
+  amount: number;
+  /** Contract address for ERC-20 tokens; omitted for the native coin. */
+  tokenAddress?: string;
+};
+
+/** Reads native + each configured token balance for an address (best-effort). */
+export async function getWalletBalances(
+  chain: ChainConfig,
+  address: string
+): Promise<WalletBalance[]> {
+  if (!isAddress(address)) return [];
+  const provider = await getProvider(chain);
+  const owner = getAddress(address);
+  const out: WalletBalance[] = [];
+
+  try {
+    const native = await provider.getBalance(owner);
+    out.push({
+      symbol: chain.nativeSymbol,
+      amount: Number(formatEther(native)),
+    });
+  } catch {
+    /* skip native on error */
+  }
+
+  for (const token of chain.tokens) {
+    try {
+      const erc20 = new Contract(token.address, ERC20_ABI, provider);
+      const bal: bigint = await erc20.balanceOf(owner);
+      out.push({
+        symbol: token.symbol,
+        amount: Number(formatUnits(bal, token.decimals)),
+        tokenAddress: getAddress(token.address),
+      });
+    } catch {
+      /* skip token on error */
+    }
+  }
+
+  return out;
 }

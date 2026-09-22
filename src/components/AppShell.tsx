@@ -34,7 +34,7 @@ export function AppShell() {
             </h2>
             <p className="mt-2 text-sm text-body">
               {verifying
-                ? "Confirm the signature in your wallet to finish signing in."
+                ? "Finish the prompt in your wallet."
                 : "Connecting your wallet securely."}
             </p>
             {verifyError && (

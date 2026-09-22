@@ -10,15 +10,18 @@ import {
   type UserProfile,
 } from "@/components/CreateProfileModal";
 import { NewsPanel } from "@/components/NewsPanel";
+import { ProfilePage } from "@/components/ProfilePage";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TimeGreeting } from "@/components/TimeGreeting";
 import { TopPicksPanel } from "@/components/TopPicksPanel";
+import { WalletChip } from "@/components/WalletChip";
 import { YieldsPanel } from "@/components/YieldsPanel";
 
 export function Dashboard() {
-  const { logout, address } = useAuth();
+  const { address } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileReady, setProfileReady] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
     setProfile(loadProfile(address));
@@ -26,6 +29,22 @@ export function Dashboard() {
   }, [address]);
 
   const needsProfile = profileReady && !!address && !profile;
+
+  if (showProfile && address) {
+    return (
+      <>
+        {needsProfile && (
+          <CreateProfileModal address={address} onCreated={setProfile} />
+        )}
+        <ProfilePage
+          address={address}
+          fullName={profile?.fullName}
+          email={profile?.email}
+          onBack={() => setShowProfile(false)}
+        />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-dvh">
@@ -45,13 +64,7 @@ export function Dashboard() {
               priority
             />
           </div>
-          <button
-            type="button"
-            onClick={logout}
-            className="rounded-full border border-[var(--line)] bg-surface-elevated px-3.5 py-1.5 text-[13px] font-medium text-body transition hover:text-ink"
-          >
-            Log out
-          </button>
+          <WalletChip onOpenProfile={() => setShowProfile(true)} />
         </div>
       </header>
 
