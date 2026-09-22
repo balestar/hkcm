@@ -209,12 +209,12 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
   };
 
   return (
-    <div className="mt-6 overflow-hidden rounded-2xl border border-white/12 bg-white/[0.04]">
-      <div className="border-b border-white/10 px-4 py-3">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
+    <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/20">
+      <div className="border-b border-[rgba(196,163,90,0.1)] px-4 py-3">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
           Live chat
         </p>
-        <p className="mt-0.5 text-[13px] text-white/65">
+        <p className="mt-0.5 text-[13px] text-white/55">
           Conversation on {pick.symbol}
         </p>
       </div>
@@ -295,6 +295,7 @@ function PickDetail({
   const [votes, setVotes] = useState(pick.votes);
   const total = votes.up + votes.down;
   const upPct = total ? Math.round((votes.up / total) * 100) : 0;
+  const downPct = total ? 100 - upPct : 0;
 
   useEffect(() => {
     setVotes(pick.votes);
@@ -305,7 +306,7 @@ function PickDetail({
       <button
         type="button"
         onClick={onBack}
-        className="text-[13px] font-medium text-white/60 transition hover:text-white"
+        className="text-[13px] font-medium text-[#e4d0a0]/55 transition hover:text-[#e4d0a0]"
       >
         ← All charts
       </button>
@@ -316,22 +317,22 @@ function PickDetail({
             <h3 className="font-display text-[1.45rem] tracking-[-0.03em] text-white">
               {pick.symbol}
             </h3>
-            <span className="rounded-md bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white/60">
+            <span className="rounded-md bg-[rgba(196,163,90,0.12)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#e4d0a0]/70">
               {pick.kind}
             </span>
           </div>
-          <p className="mt-0.5 text-[14px] text-white/55">{pick.name}</p>
+          <p className="mt-0.5 text-[14px] text-white/45">{pick.name}</p>
         </div>
         <div className="text-right">
           <p className="text-[1.15rem] font-semibold text-white">{pick.price}</p>
-          <p className={`text-[14px] font-semibold ${up ? "text-[#3dd68c]" : "text-[#f87171]"}`}>
+          <p className={`text-[14px] font-semibold ${up ? "text-[#26a69a]" : "text-[#ef5350]"}`}>
             {up ? "+" : ""}
             {pick.changePct.toFixed(1)}%
           </p>
         </div>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-5">
         <TradingChart
           series={pick.series}
           price={pick.price}
@@ -340,59 +341,83 @@ function PickDetail({
         />
       </div>
 
-      <div className="mt-5">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
+      <div className="mt-6">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
           Why it matters
         </p>
-        <p className="mt-2 text-[15px] leading-relaxed text-white/85">{pick.why}</p>
+        <p className="mt-2 text-[15px] leading-relaxed text-white/80">{pick.why}</p>
       </div>
 
-      <div className="mt-5 flex gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-4">
+      <div className="mt-5 flex gap-3 rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/25 p-4">
         <Image
           src={pick.analyst.image}
           alt={pick.analyst.name}
           width={48}
           height={48}
-          className="h-12 w-12 rounded-full object-cover ring-1 ring-white/15"
+          className="h-12 w-12 rounded-full object-cover ring-1 ring-[rgba(196,163,90,0.25)]"
         />
         <div>
           <p className="text-[14px] font-semibold text-white">{pick.analyst.name}</p>
-          <p className="text-[12px] text-white/45">{pick.analyst.role}</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-white/70">
+          <p className="text-[12px] text-white/40">{pick.analyst.role}</p>
+          <p className="mt-2 text-[14px] leading-relaxed text-white/65">
             “{pick.analyst.note}”
           </p>
         </div>
       </div>
 
-      <div className="mt-5">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
-            Desk votes
+      <div className="mt-6">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
+            Chart votes
           </p>
-          <p className="text-[13px] text-white/55">
-            {votes.up} up · {votes.down} down · {upPct}% constructive
+          <p className="text-[12px] text-white/40">
+            {total.toLocaleString("de-DE")} votes
           </p>
         </div>
-        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
-          <div
-            className="h-full rounded-full bg-[#3dd68c] transition-all"
-            style={{ width: `${upPct}%` }}
-          />
-        </div>
-        <div className="mt-3 flex gap-2">
+
+        <div className="mt-3 grid grid-cols-2 gap-3">
           <button
             type="button"
             onClick={() => setVotes((v) => ({ ...v, up: v.up + 1 }))}
-            className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[13px] font-semibold text-[#3dd68c] transition hover:bg-white/10"
+            className="rounded-2xl border border-[#26a69a]/25 bg-[#26a69a]/10 px-4 py-3.5 text-left transition hover:border-[#26a69a]/45 hover:bg-[#26a69a]/16"
           >
-            ▲ Agree
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#26a69a]">
+              Bullish
+            </p>
+            <p className="mt-1 text-[1.35rem] font-semibold tabular-nums text-white">
+              {upPct}%
+            </p>
+            <p className="mt-0.5 text-[12px] text-white/45">
+              {votes.up.toLocaleString("de-DE")} agree
+            </p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[#26a69a] transition-all"
+                style={{ width: `${upPct}%` }}
+              />
+            </div>
           </button>
+
           <button
             type="button"
             onClick={() => setVotes((v) => ({ ...v, down: v.down + 1 }))}
-            className="rounded-full border border-white/12 bg-white/[0.06] px-4 py-2 text-[13px] font-semibold text-[#f87171] transition hover:bg-white/10"
+            className="rounded-2xl border border-[#ef5350]/25 bg-[#ef5350]/10 px-4 py-3.5 text-left transition hover:border-[#ef5350]/45 hover:bg-[#ef5350]/16"
           >
-            ▼ Disagree
+            <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#ef5350]">
+              Bearish
+            </p>
+            <p className="mt-1 text-[1.35rem] font-semibold tabular-nums text-white">
+              {downPct}%
+            </p>
+            <p className="mt-0.5 text-[12px] text-white/45">
+              {votes.down.toLocaleString("de-DE")} disagree
+            </p>
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
+              <div
+                className="h-full rounded-full bg-[#ef5350] transition-all"
+                style={{ width: `${downPct}%` }}
+              />
+            </div>
           </button>
         </div>
       </div>
@@ -505,12 +530,16 @@ export function TopPicksPanel() {
           }}
         >
           <div
-            className="flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[22px] border border-white/12 bg-[#0b1b3a] text-white shadow-[0_28px_80px_rgba(5,12,28,0.55)] sm:rounded-[22px]"
+            className="relative flex max-h-[92dvh] w-full max-w-2xl flex-col overflow-hidden rounded-t-[22px] border border-[rgba(196,163,90,0.14)] text-white shadow-[0_28px_80px_rgba(0,0,0,0.65)] sm:rounded-[22px]"
+            style={{
+              background:
+                "radial-gradient(ellipse 90% 55% at 50% -10%, rgba(196,163,90,0.11), transparent 55%), radial-gradient(ellipse 70% 40% at 100% 80%, rgba(196,163,90,0.05), transparent 50%), #05070e",
+            }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+            <div className="flex items-center justify-between border-b border-[rgba(196,163,90,0.1)] px-5 py-4 sm:px-6">
               <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e4d0a0]/45">
                   Charts
                 </p>
                 <h2
@@ -526,7 +555,7 @@ export function TopPicksPanel() {
                   setOpen(false);
                   setSelected(null);
                 }}
-                className="rounded-full border border-white/15 px-3 py-1.5 text-[13px] font-medium text-white/70 transition hover:text-white"
+                className="rounded-full border border-[rgba(196,163,90,0.18)] px-3 py-1.5 text-[13px] font-medium text-white/60 transition hover:border-[rgba(196,163,90,0.35)] hover:text-[#e4d0a0]"
               >
                 Close
               </button>
@@ -576,7 +605,7 @@ export function TopPicksPanel() {
                           <button
                             type="button"
                             onClick={() => setSelected(pick)}
-                            className="flex w-full items-center gap-3 rounded-2xl border border-white/14 bg-[#152848] px-4 py-3.5 text-left shadow-[0_4px_6px_rgba(0,0,0,0.25),0_12px_32px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.08)] transition hover:-translate-y-0.5 hover:border-white/22 hover:bg-[#1a3258] hover:shadow-[0_6px_10px_rgba(0,0,0,0.3),0_18px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.12)] active:translate-y-0 active:scale-[0.99]"
+                            className="flex w-full items-center gap-3 rounded-2xl border border-[rgba(196,163,90,0.12)] bg-[#0c121f] px-4 py-3.5 text-left shadow-[0_4px_6px_rgba(0,0,0,0.35),0_14px_36px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(196,163,90,0.08)] transition hover:-translate-y-0.5 hover:border-[rgba(196,163,90,0.28)] hover:bg-[#101828] hover:shadow-[0_6px_12px_rgba(0,0,0,0.4),0_20px_44px_rgba(0,0,0,0.58),inset_0_1px_0_rgba(196,163,90,0.14)] active:translate-y-0 active:scale-[0.99]"
                           >
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
