@@ -13,6 +13,7 @@ import {
   formatAgo,
   nextFeedDelayMs,
 } from "@/lib/dummyFeed";
+import { TradingChart } from "@/components/TradingChart";
 
 function Sparkline({
   series,
@@ -53,36 +54,6 @@ function Sparkline({
         strokeLinecap="round"
         points={pts}
       />
-    </svg>
-  );
-}
-
-function FullChart({ series, up }: { series: number[]; up: boolean }) {
-  const W = 640;
-  const H = 220;
-  const pad = 16;
-  const min = Math.min(...series);
-  const max = Math.max(...series);
-  const span = max - min || 1;
-  const pts = series.map((v, i) => {
-    const x = pad + (i / (series.length - 1)) * (W - pad * 2);
-    const y = pad + (1 - (v - min) / span) * (H - pad * 2);
-    return [x, y] as const;
-  });
-  const line = pts.map(([x, y], i) => `${i === 0 ? "M" : "L"}${x} ${y}`).join(" ");
-  const area = `${line} L${pts[pts.length - 1][0]} ${H - pad} L${pts[0][0]} ${H - pad} Z`;
-  const stroke = up ? "#3dd68c" : "#f87171";
-  const fill = up ? "rgba(61,214,140,0.14)" : "rgba(248,113,113,0.12)";
-
-  return (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      className="h-auto w-full"
-      role="img"
-      aria-label="Price chart"
-    >
-      <path d={area} fill={fill} />
-      <path d={line} fill="none" stroke={stroke} strokeWidth="2.25" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -336,7 +307,7 @@ function PickDetail({
         onClick={onBack}
         className="text-[13px] font-medium text-white/60 transition hover:text-white"
       >
-        ← All picks
+        ← All charts
       </button>
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
@@ -360,13 +331,18 @@ function PickDetail({
         </div>
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
-        <FullChart series={pick.series} up={up} />
+      <div className="mt-4">
+        <TradingChart
+          series={pick.series}
+          price={pick.price}
+          up={up}
+          symbol={pick.symbol}
+        />
       </div>
 
       <div className="mt-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/40">
-          Why we picked it
+          Why it matters
         </p>
         <p className="mt-2 text-[15px] leading-relaxed text-white/85">{pick.why}</p>
       </div>
@@ -452,11 +428,11 @@ export function TopPicksPanel() {
 
   return (
     <>
-      <section className="panel animate-rise-delay-4 p-5 sm:p-6">
+      <section className="panel animate-rise-delay-3 p-5 sm:p-6">
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-              Top picks
+              Charts
             </p>
             <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
               Crypto, stocks, bonds &amp; more
@@ -522,7 +498,7 @@ export function TopPicksPanel() {
           className="fixed inset-0 z-50 flex items-end justify-center bg-[#050b18]/65 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           role="dialog"
           aria-modal="true"
-          aria-labelledby="top-picks-title"
+          aria-labelledby="charts-title"
           onClick={() => {
             setOpen(false);
             setSelected(null);
@@ -538,10 +514,10 @@ export function TopPicksPanel() {
                   HKCM desk
                 </p>
                 <h2
-                  id="top-picks-title"
+                  id="charts-title"
                   className="mt-0.5 font-display text-[1.35rem] tracking-[-0.03em] text-white"
                 >
-                  {selected ? selected.symbol : "Top picks"}
+                  {selected ? selected.symbol : "Charts"}
                 </h2>
               </div>
               <button

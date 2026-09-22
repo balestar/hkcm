@@ -79,8 +79,8 @@ export function Dashboard() {
         <div className="flex flex-col gap-4 sm:gap-5">
           <AccountSummary />
           <YieldsPanel />
-          <NewsPanel />
           <TopPicksPanel />
+          <NewsPanel />
         </div>
       </main>
 

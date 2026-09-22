@@ -70,15 +70,15 @@ export function AccountSummary() {
           <p className="mt-3 font-display text-[2.1rem] tracking-[-0.04em] text-ink sm:text-[2.35rem]">
             {loading ? "…" : formatEur(totalEur)}
           </p>
-          <p className="mt-1 text-[13px] text-body">
-            {loading
-              ? "Reading your wallet…"
-              : error
-                ? "Couldn’t read on-chain balances."
-                : heldCount > 0
-                  ? `${heldCount} token${heldCount === 1 ? "" : "s"} across ${holdings.filter((h) => h.totalEur > 0 || h.tokens.some((t) => t.amount > 0)).length} chain${holdings.filter((h) => h.totalEur > 0 || h.tokens.some((t) => t.amount > 0)).length === 1 ? "" : "s"}`
+          {(loading || error || heldCount === 0) && (
+            <p className="mt-1 text-[13px] text-body">
+              {loading
+                ? "Reading your wallet…"
+                : error
+                  ? "Couldn’t read on-chain balances."
                   : "No tokens found in this wallet."}
-          </p>
+            </p>
+          )}
         </div>
       </div>
 

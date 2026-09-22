@@ -41,12 +41,6 @@ export function SiteFooter({ variant: _variant = "dark" }: SiteFooterProps) {
               <br />
               Deutschland
             </address>
-            <a
-              href="tel:+497112200810"
-              className="mt-3 inline-block text-[14px] font-medium text-white/80 transition hover:text-white"
-            >
-              +49 711 2200 81 0
-            </a>
           </div>
 
           <div>

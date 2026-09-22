@@ -201,7 +201,7 @@ function NewsRow({ item }: { item: NewsItem }) {
 
 export function NewsPanel() {
   return (
-    <section className="panel animate-rise-delay-3 p-5 sm:p-6">
+    <section className="panel animate-rise-delay-4 p-5 sm:p-6">
       <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
         Markets &amp; policy
       </p>
