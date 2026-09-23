@@ -8,11 +8,7 @@ import {
   type PickCategory,
   type PickItem,
 } from "@/lib/data";
-import {
-  DUMMY_PROFILES,
-  formatAgo,
-  nextFeedDelayMs,
-} from "@/lib/dummyFeed";
+import { formatAgo, nextFeedDelayMs } from "@/lib/dummyFeed";
 import { TradingChart } from "@/components/TradingChart";
 
 function Sparkline({
@@ -58,99 +54,182 @@ function Sparkline({
   );
 }
 
-type ChatUser = {
-  id: string;
-  name: string;
-  avatar: string;
-  /** Prestige badge tier — only some users have one. */
-  badge: 2 | 3 | 4 | 5 | null;
-};
+// ─── Stream chat ──────────────────────────────────────────────────────────────
 
-type ChatMsg = {
+type Platform = "x" | "instagram" | "facebook";
+
+type StreamMsg = {
   uid: string;
-  user: ChatUser;
+  handle: string;
+  platform: Platform;
   text: string;
   createdAt: number;
 };
 
-const PROFILE_POOL = DUMMY_PROFILES.filter(
-  (p) =>
-    p.platform === "linkedin" &&
-    p.avatar.startsWith("/profiles/li/") &&
-    !p.name.includes(".eth")
-);
-
-function randomBadge(): 2 | 3 | 4 | 5 | null {
-  const roll = Math.random();
-  if (roll < 0.55) return null;
-  if (roll < 0.7) return 2;
-  if (roll < 0.84) return 3;
-  if (roll < 0.94) return 4;
-  return 5;
+function XIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 20 20" fill="currentColor" aria-hidden className="shrink-0 text-white/50">
+      <path d="M15.75 2h-2.6L10 7.19 6.85 2H1.5l6.3 9.1L1.5 18h2.6l3.38-4.88L11.15 18h5.35l-6.47-9.34L15.75 2Z" />
+    </svg>
+  );
 }
 
-function pickUser(avoidIds: Set<string>): ChatUser {
-  const pool = PROFILE_POOL.filter((p) => !avoidIds.has(p.id));
-  const list = pool.length ? pool : PROFILE_POOL;
-  const p = list[Math.floor(Math.random() * list.length)];
-  return {
-    id: p.id,
-    name: p.name.split(" ")[0] || p.name,
-    avatar: p.avatar,
-    badge: randomBadge(),
-  };
+function IgIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden className="shrink-0 text-white/50">
+      <rect x="2" y="2" width="20" height="20" rx="5" />
+      <circle cx="12" cy="12" r="4.5" />
+      <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
 }
 
-function commentForPick(pick: PickItem): string {
-  const dir = pick.changePct >= 0 ? "bid" : "soft";
-  const pct = `${pick.changePct >= 0 ? "+" : ""}${pick.changePct.toFixed(1)}%`;
-  const templates: string[] = [
-    `${pick.symbol} still constructive on the ${pick.kind.toLowerCase()} desk.`,
-    `Watching ${pick.name} — ${pct} on the session, not chasing.`,
-    `${pick.symbol}: prefer dips over FOMO into the US open.`,
-    `Desk lean on ${pick.symbol} stays ${dir === "bid" ? "long-biased" : "cautious"}.`,
-    `${pick.why.split(".")[0]}.`,
-    `${pick.name} structure intact — size light until confirmation.`,
-    `Anyone else seeing ${pick.symbol} reclaim the mid?`,
-    `${pick.symbol} flow looks orderly. Keeping risk tight.`,
-    `On ${pick.name}: ${pick.analyst.note.split(".")[0]}.`,
-    `${pick.kind} sleeve — ${pick.symbol} is the cleaner name today.`,
-    `Just marked ${pick.symbol} on my watchlist. Levels matter more than headlines.`,
-    `${pick.symbol} ${pct} — if we lose the open low I step aside.`,
-    `Quiet tape in ${pick.name}. No need to force it.`,
-    `${pick.symbol}: volume needs to confirm the next push.`,
-    `Agree with the desk note on ${pick.symbol} — shallow dips preferred.`,
-  ];
-  return templates[Math.floor(Math.random() * templates.length)];
+function FbIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden className="shrink-0 text-white/50">
+      <path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.99 3.66 9.12 8.44 9.88v-6.99H7.9V12h2.54V9.8c0-2.51 1.49-3.89 3.77-3.89 1.09 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56V12h2.78l-.44 2.89h-2.34v6.99C18.34 21.12 22 16.99 22 12Z" />
+    </svg>
+  );
 }
 
-function makeMsg(pick: PickItem, avoidIds: string[]): ChatMsg {
-  const user = pickUser(new Set(avoidIds));
+function PlatformIcon({ p }: { p: Platform }) {
+  if (p === "x") return <XIcon />;
+  if (p === "instagram") return <IgIcon />;
+  return <FbIcon />;
+}
+
+const HANDLES: { h: string; p: Platform }[] = [
+  { h: "heinz_invest",       p: "x" },
+  { h: "MarktAnalyse_DE",    p: "x" },
+  { h: "FrankfurterBulle",   p: "x" },
+  { h: "klaas.trades",       p: "instagram" },
+  { h: "FinanzFuchs_HH",     p: "x" },
+  { h: "DAX_Daily",          p: "x" },
+  { h: "peter_r_invest",     p: "facebook" },
+  { h: "EuroTrader88",       p: "x" },
+  { h: "bernd.aktien",       p: "instagram" },
+  { h: "SabineMarkets",      p: "x" },
+  { h: "ThomW_FX",           p: "x" },
+  { h: "MaxKapital",         p: "instagram" },
+  { h: "JoergBoerse",        p: "facebook" },
+  { h: "AnneF_Finance",      p: "x" },
+  { h: "IanHarris_FX",       p: "x" },
+  { h: "AlexMurray_Inv",     p: "x" },
+  { h: "carlos.mercados",    p: "instagram" },
+  { h: "MichaelRentner",     p: "facebook" },
+  { h: "WolfgangB_Invest",   p: "facebook" },
+  { h: "RudigerW_Charts",    p: "x" },
+  { h: "ElkeM.Boerse",       p: "facebook" },
+  { h: "UK_MarketsDesk",     p: "x" },
+  { h: "BerlinTrader",       p: "instagram" },
+  { h: "HamburgFX",          p: "x" },
+  { h: "MunichMarkets",      p: "instagram" },
+];
+
+// Large pool: German, mixed DE/EN, English-only, emoji-only
+const COMMENT_POOL: string[] = [
+  // German – professional/middle-aged
+  "Immer noch bullisch hier. Dips kaufen, nicht verkaufen.",
+  "Charttechnisch sehr interessant gerade.",
+  "Ich warte auf Bestätigung durch das Volumen.",
+  "Mal sehen was die EZB morgen sagt.",
+  "War günstiger, aber trotzdem noch okay bewertet.",
+  "Typisches Konsolidierungsmuster vor dem nächsten Schub.",
+  "Vorsicht ist angebracht, aber kein Grund zur Panik.",
+  "Ich hab hier nachgekauft. Mal abwarten.",
+  "Schönes Setup. Ich bleibe dabei.",
+  "Wenn die 200er Linie hält, bin ich dabei.",
+  "Strukturell solide. Keine Eile.",
+  "Geduld zahlt sich aus. Ich warte auf einen sauberen Eintritt.",
+  "Druck durch die Zinsen bleibt — trotzdem konstruktiv.",
+  "Nicht in Panik verfallen. Die Lage ist beherrschbar.",
+  "Volumen bestätigt die Richtung. Gut.",
+  "Langsam aber sicher. Das ist Börse.",
+  "Fundamentaldaten passen. Chart auch. Bleibe long.",
+  "Kleine Position aufgebaut. Schauen wir mal.",
+  "Interessant, aber ich warte noch auf den Wochenschluss.",
+  "Die Unterstützung hält bislang gut.",
+  // Mixed German / English
+  "DAX sieht gut aus — staying long hier.",
+  "Klassisches Breakout-Setup, nice.",
+  "EZB play läuft durch. Watching closely.",
+  "Technisch in Ordnung. Let's see.",
+  "Starkes Signal. Not chasing though.",
+  "Risk/reward passt hier. Bin dabei.",
+  "Quiet tape, aber der Trend bleibt intakt.",
+  "Nice setup heute. Schauen wir obs hält.",
+  "Levels sind klar. Structure intact.",
+  "Schöner Rücksetzer — good entry zone.",
+  "Na dann, mal sehen 👀",
+  "Gut! 📈 Hab schon länger darauf gewartet.",
+  "Solide Sache 💪 weiter so.",
+  "Augen auf heute Nachmittag — US open könnte bewegen.",
+  "Volumen fehlt noch — volume needed to confirm.",
+  // English – professional
+  "Still constructive at these levels.",
+  "Volume needs to confirm before adding more.",
+  "Risk/reward looks decent here.",
+  "Not chasing. Waiting for a cleaner entry.",
+  "Watching the session low carefully.",
+  "Quiet tape. No need to force a trade.",
+  "Structure intact — keeping size light.",
+  "Levels matter more than headlines here.",
+  "Interesting setup. Not in yet.",
+  "Prefer shallow dips over momentum entries.",
+  "Orderly flow. Risk stays tight.",
+  "Nothing to do here until volume steps in.",
+  "Session low is the key level for me.",
+  "Agree with the setup — execution is everything.",
+  "Holding a small position. Will add on confirmation.",
+  "Mid-session consolidation. Expected.",
+  "Technically sound. Macro still a headwind.",
+  // Emoji-only
+  "📈🔥",
+  "💪📊",
+  "👀",
+  "📊💯",
+  "🐂",
+  "⚡📈",
+  "🤞",
+  "👍",
+  "📉 — patience",
+  "🎯",
+  "💎",
+  "📈📈",
+  "🔥🔥",
+  "🤔 mal abwarten",
+  "💪 dabei",
+];
+
+function randomHandle(avoid: Set<string>): { h: string; p: Platform } {
+  const pool = HANDLES.filter((x) => !avoid.has(x.h));
+  return (pool.length ? pool : HANDLES)[Math.floor(Math.random() * (pool.length || HANDLES.length))];
+}
+
+function makeStreamMsg(avoidHandles: string[]): StreamMsg {
+  const { h, p } = randomHandle(new Set(avoidHandles));
   const now = Date.now();
-  const age = Math.random() * 90_000;
+  const text = COMMENT_POOL[Math.floor(Math.random() * COMMENT_POOL.length)];
   return {
-    uid: `${user.id}-${now}-${Math.random().toString(36).slice(2, 7)}`,
-    user,
-    text: commentForPick(pick),
-    createdAt: now - age,
+    uid: `${h}-${now}-${Math.random().toString(36).slice(2, 6)}`,
+    handle: h,
+    platform: p,
+    text,
+    createdAt: now - Math.random() * 90_000,
   };
 }
 
 function LiveChatFeed({ pick }: { pick: PickItem }) {
-  const [items, setItems] = useState<ChatMsg[]>([]);
+  const [items, setItems] = useState<StreamMsg[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [draft, setDraft] = useState("");
   const timerRef = useRef<number | null>(null);
-  const listRef = useRef<HTMLUListElement>(null);
 
-  // Reset feed when the selected pick changes
   useEffect(() => {
-    const seed: ChatMsg[] = [];
-    for (let i = 0; i < 5; i++) {
-      seed.push(makeMsg(pick, seed.map((s) => s.user.id)));
-    }
+    const seed: StreamMsg[] = [];
+    for (let i = 0; i < 6; i++) seed.push(makeStreamMsg(seed.map((s) => s.handle)));
     setItems(seed.sort((a, b) => b.createdAt - a.createdAt));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only reset on pick identity
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pick.id]);
 
   useEffect(() => {
@@ -161,26 +240,20 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
   useEffect(() => {
     let cancelled = false;
     const schedule = () => {
-      const delay = Math.min(nextFeedDelayMs() / 8, 45_000) + Math.random() * 25_000;
+      const delay = Math.min(nextFeedDelayMs() / 8, 40_000) + Math.random() * 20_000;
       timerRef.current = window.setTimeout(() => {
         if (cancelled) return;
         setItems((prev) => {
           const t = Date.now();
-          // ~25%: nudge an existing timestamp only (feels alive without spam)
-          if (Math.random() < 0.25 && prev.length >= 3) {
+          if (Math.random() < 0.2 && prev.length >= 3) {
             const i = Math.floor(Math.random() * prev.length);
             return prev
-              .map((m, idx) =>
-                idx === i ? { ...m, createdAt: t - Math.random() * 20_000 } : m
-              )
+              .map((m, idx) => idx === i ? { ...m, createdAt: t - Math.random() * 15_000 } : m)
               .sort((a, b) => b.createdAt - a.createdAt);
           }
-          const fresh = makeMsg(
-            pick,
-            prev.slice(0, 4).map((m) => m.user.id)
-          );
+          const fresh = makeStreamMsg(prev.slice(0, 4).map((m) => m.handle));
           fresh.createdAt = t;
-          return [fresh, ...prev].slice(0, 8);
+          return [fresh, ...prev].slice(0, 10);
         });
         setNow(Date.now());
         schedule();
@@ -197,67 +270,36 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
     const text = draft.trim();
     if (!text) return;
     setDraft("");
-    setItems((prev) => [
-      {
-        uid: `you-${Date.now()}`,
-        user: { id: "you", name: "You", avatar: "", badge: null },
-        text,
-        createdAt: Date.now(),
-      },
-      ...prev,
-    ].slice(0, 10));
+    setItems((prev) => [{
+      uid: `you-${Date.now()}`,
+      handle: "you",
+      platform: "x" as Platform,
+      text,
+      createdAt: Date.now(),
+    }, ...prev].slice(0, 11));
   };
 
   return (
     <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/20">
-      <div className="border-b border-[rgba(196,163,90,0.1)] px-4 py-3">
+      <div className="border-b border-[rgba(196,163,90,0.1)] px-4 py-2.5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
-          Live chat
-        </p>
-        <p className="mt-0.5 text-[13px] text-white/55">
-          Conversation on {pick.symbol}
+          Live stream · {pick.symbol}
         </p>
       </div>
 
-      <ul ref={listRef} className="max-h-64 space-y-0 overflow-y-auto">
+      <ul className="max-h-64 overflow-y-auto">
         {items.map((m) => (
-          <li
-            key={m.uid}
-            className="flex gap-3 border-b border-white/8 px-4 py-3 last:border-0"
-          >
-            <div className="relative h-9 w-9 shrink-0">
-              {m.user.avatar ? (
-                <Image
-                  src={m.user.avatar}
-                  alt=""
-                  width={36}
-                  height={36}
-                  className="h-9 w-9 rounded-full object-cover ring-1 ring-white/15"
-                />
-              ) : (
-                <div className="grid h-9 w-9 place-items-center rounded-full bg-brand/80 text-[12px] font-semibold text-white">
-                  Y
-                </div>
-              )}
-              {m.user.badge != null && (
-                <span className="absolute -bottom-0.5 -right-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-brand px-1 text-[9px] font-bold text-white ring-2 ring-[#0b1b3a]">
-                  {m.user.badge}
-                </span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-baseline gap-x-2">
-                <span className="text-[13px] font-semibold text-white">
-                  {m.user.name}
-                </span>
-                <span className="text-[11px] text-white/35">
-                  {formatAgo(m.createdAt, now)}
-                </span>
-              </div>
-              <p className="mt-0.5 text-[13px] leading-relaxed text-white/70">
-                {m.text}
-              </p>
-            </div>
+          <li key={m.uid} className="flex items-baseline gap-2 border-b border-white/[0.06] px-4 py-2.5 last:border-0">
+            <PlatformIcon p={m.platform} />
+            <span className="shrink-0 text-[12px] font-semibold text-[#e4d0a0]/70">
+              @{m.handle}
+            </span>
+            <span className="min-w-0 flex-1 text-[13px] leading-snug text-white/75">
+              {m.text}
+            </span>
+            <span className="ml-auto shrink-0 text-[10px] tabular-nums text-white/25">
+              {formatAgo(m.createdAt, now)}
+            </span>
           </li>
         ))}
       </ul>
@@ -266,18 +308,16 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
         <input
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") send();
-          }}
+          onKeyDown={(e) => { if (e.key === "Enter") send(); }}
           placeholder={`Comment on ${pick.symbol}…`}
-          className="flex-1 rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[14px] text-white outline-none placeholder:text-white/35 focus:border-brand/50"
+          className="flex-1 rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[rgba(196,163,90,0.4)]"
         />
         <button
           type="button"
           onClick={send}
-          className="rounded-xl bg-brand px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-brand-deep"
+          className="rounded-xl bg-[rgba(196,163,90,0.18)] px-4 py-2.5 text-[13px] font-semibold text-[#e4d0a0] transition hover:bg-[rgba(196,163,90,0.28)]"
         >
-          Send
+          Post
         </button>
       </div>
     </div>
