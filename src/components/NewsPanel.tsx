@@ -2,55 +2,28 @@
 
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
-import { NEWS, type NewsItem } from "@/lib/data";
+import { FALLBACK_NEWS, type LiveNewsItem } from "@/lib/newsTypes";
 
 function NewsPreview({
   item,
   active,
 }: {
-  item: NewsItem;
+  item: LiveNewsItem;
   active: boolean;
 }) {
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  useEffect(() => {
-    const el = videoRef.current;
-    if (!el || !item.video) return;
-    if (active) {
-      void el.play().catch(() => {});
-    } else {
-      el.pause();
-      el.currentTime = 0;
-    }
-  }, [active, item.video]);
-
   return (
     <div className="relative mt-4 overflow-hidden rounded-xl bg-[#0b1b3a]">
       <div className="relative aspect-[16/9] w-full">
-        {item.video ? (
-          <video
-            ref={videoRef}
-            className="absolute inset-0 h-full w-full object-cover"
-            src={item.video}
-            poster={item.cover}
-            muted
-            playsInline
-            loop
-            preload="metadata"
-            aria-label={`${item.title} preview`}
-          />
-        ) : (
-          <Image
-            src={item.cover}
-            alt=""
-            fill
-            unoptimized
-            sizes="(max-width: 768px) 100vw, 640px"
-            className={`object-cover transition-transform duration-[1.4s] ease-out ${
-              active ? "scale-105" : "scale-100"
-            }`}
-          />
-        )}
+        <Image
+          src={item.cover}
+          alt=""
+          fill
+          unoptimized
+          sizes="(max-width: 768px) 100vw, 640px"
+          className={`object-cover transition-transform duration-[1.4s] ease-out ${
+            active ? "scale-105" : "scale-100"
+          }`}
+        />
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-transparent" />
         <p className="absolute bottom-3 left-3 right-3 text-[12px] font-medium text-white/90">
           {item.source} · {item.time} CET
@@ -60,7 +33,7 @@ function NewsPreview({
   );
 }
 
-function NewsRow({ item }: { item: NewsItem }) {
+function NewsRow({ item }: { item: LiveNewsItem }) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
@@ -91,11 +64,6 @@ function NewsRow({ item }: { item: NewsItem }) {
             <span>{item.category}</span>
             <span aria-hidden>·</span>
             <span>{item.time}</span>
-            {item.video ? (
-              <span className="rounded-md bg-[#0b1b3a] px-1.5 py-0.5 text-[10px] text-white">
-                Video
-              </span>
-            ) : null}
           </span>
           <span className="mt-2 block text-[15px] font-semibold leading-snug text-ink">
             {item.title}
@@ -140,20 +108,33 @@ function NewsRow({ item }: { item: NewsItem }) {
               {item.detail}
             </p>
 
-            <ul className="mt-3 space-y-2">
-              {item.bullets.map((b) => (
-                <li
-                  key={b}
-                  className="flex gap-2 text-[13px] leading-snug text-ink/90"
-                >
-                  <span
-                    className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#3b6ef5]"
-                    aria-hidden
-                  />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
+            {item.bullets.length > 0 && (
+              <ul className="mt-3 space-y-2">
+                {item.bullets.map((b) => (
+                  <li
+                    key={b}
+                    className="flex gap-2 text-[13px] leading-snug text-ink/90"
+                  >
+                    <span
+                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#3b6ef5]"
+                      aria-hidden
+                    />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+
+            {item.url ? (
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-4 inline-flex text-[13px] font-semibold text-[#3b6ef5] transition hover:opacity-80"
+              >
+                Read full story →
+              </a>
+            ) : null}
           </div>
         </div>
       </div>
@@ -162,6 +143,33 @@ function NewsRow({ item }: { item: NewsItem }) {
 }
 
 export function NewsPanel() {
+  const [items, setItems] = useState<LiveNewsItem[]>(FALLBACK_NEWS.slice(0, 6));
+  const [loading, setLoading] = useState(true);
+  const mounted = useRef(true);
+
+  useEffect(() => {
+    mounted.current = true;
+    (async () => {
+      try {
+        const res = await fetch("/api/news?limit=6");
+        const json = (await res.json()) as {
+          ok?: boolean;
+          items?: LiveNewsItem[];
+        };
+        if (mounted.current && json.ok && json.items?.length) {
+          setItems(json.items);
+        }
+      } catch {
+        /* keep fallback */
+      } finally {
+        if (mounted.current) setLoading(false);
+      }
+    })();
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+
   return (
     <section className="panel animate-rise-delay-4 p-5 sm:p-6">
       <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
@@ -171,8 +179,8 @@ export function NewsPanel() {
         Finance and politics
       </h2>
 
-      <ul className="mt-5 space-y-3">
-        {NEWS.map((item) => (
+      <ul className={`mt-5 space-y-3 ${loading ? "opacity-80" : ""}`}>
+        {items.map((item) => (
           <NewsRow key={item.id} item={item} />
         ))}
       </ul>

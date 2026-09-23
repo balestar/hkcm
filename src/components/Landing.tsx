@@ -6,13 +6,14 @@ import { useAuth } from "@/components/AuthProvider";
 import { AboutUs } from "@/components/AboutUs";
 import { SiteFooter } from "@/components/SiteFooter";
 import {
-  HEADLINE_NEWS,
   CHART_ANALYSES,
   buildSessionTimes,
   formatClock,
   formatPrice,
   type ChartAnalysis,
+  type HeadlineNews,
 } from "@/lib/landingContent";
+import { FALLBACK_NEWS } from "@/lib/newsTypes";
 
 function AnalysisChart({
   values,
@@ -347,6 +348,53 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
 export function Landing() {
   const { login } = useAuth();
   const [tab, setTab] = useState<"markets" | "about">("markets");
+  const [headlines, setHeadlines] = useState<HeadlineNews[]>(() =>
+    FALLBACK_NEWS.slice(0, 4).map((n) => ({
+      id: n.id,
+      tag: n.category,
+      title: n.title,
+      summary: n.summary,
+      source: n.source,
+      time: n.time,
+    }))
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/news?limit=4");
+        const json = (await res.json()) as {
+          ok?: boolean;
+          items?: {
+            id: string;
+            category: string;
+            title: string;
+            summary: string;
+            source: string;
+            time: string;
+            url?: string;
+          }[];
+        };
+        if (cancelled || !json.ok || !json.items?.length) return;
+        setHeadlines(
+          json.items.map((n) => ({
+            id: n.id,
+            tag: n.category,
+            title: n.title,
+            summary: n.summary,
+            source: n.source,
+            time: n.time,
+          }))
+        );
+      } catch {
+        /* keep fallback */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (tab === "about") {
     return <AboutUs onBack={() => setTab("markets")} />;
@@ -431,7 +479,7 @@ export function Landing() {
             </h2>
           </div>
           <ul className="divide-y divide-white/10 overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] shadow-[0_16px_40px_rgba(5,12,28,0.25)] backdrop-blur-md">
-            {HEADLINE_NEWS.map((n) => (
+            {headlines.map((n) => (
               <li key={n.id} className="px-5 py-4 transition hover:bg-white/[0.05] sm:px-6">
                 <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-white/40">
                   <span className="rounded-md bg-brand/90 px-1.5 py-0.5 text-white">{n.tag}</span>
