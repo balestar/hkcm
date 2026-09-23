@@ -40,18 +40,18 @@ function coverFor(i: number, image?: string | null): string {
   return FALLBACK_COVERS[i % FALLBACK_COVERS.length];
 }
 
-function uniqueMedia(urls: Array<string | undefined | null>, fallback: string): string[] {
+/** Only real HTTP URLs — never local fallback paths in the slides array. */
+function uniqueHttpMedia(urls: Array<string | undefined | null>): string[] {
   const out: string[] = [];
   const seen = new Set<string>();
   for (const raw of urls) {
-    if (!raw) continue;
+    if (!isHttpUrl(raw)) continue;
     const u = raw.trim();
-    if (!u || seen.has(u)) continue;
+    if (seen.has(u)) continue;
     seen.add(u);
     out.push(u);
     if (out.length >= 3) break;
   }
-  if (!out.length) out.push(fallback);
   return out;
 }
 
@@ -104,6 +104,8 @@ function mapArticle(
   const summary = raw.summary?.trim() || raw.title.trim();
   const category = categorize(`${raw.title} ${summary}`);
   const cover = coverFor(index, raw.image ?? raw.images?.[0]);
+  // slides = only genuine HTTP URLs from the wire; cover may be a local fallback
+  const slides = uniqueHttpMedia([raw.image, ...(raw.images ?? [])]);
   return {
     id: raw.id,
     category,
@@ -112,7 +114,7 @@ function mapArticle(
     source: raw.source.trim() || "Markets wire",
     time: formatTime(raw.datetime),
     cover,
-    slides: uniqueMedia([raw.image, ...(raw.images ?? [])], cover),
+    slides,
     video: raw.video,
     detail: summary,
     bullets: bulletsFrom(summary),
@@ -121,38 +123,6 @@ function mapArticle(
   };
 }
 
-const TITLE_STOP = new Set([
-  "the", "and", "for", "with", "from", "that", "this", "into", "over", "after",
-  "says", "said", "will", "have", "has", "are", "was", "its", "new", "as",
-]);
-
-function titleTokens(title: string): Set<string> {
-  return new Set(
-    title
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, " ")
-      .split(/\s+/)
-      .filter((w) => w.length > 3 && !TITLE_STOP.has(w))
-  );
-}
-
-/** Extra wire photos from other items covering the same story. */
-function attachRelatedSlides(items: LiveNewsItem[]): LiveNewsItem[] {
-  const tokens = items.map((it) => titleTokens(it.title));
-  return items.map((item, i) => {
-    const mine = tokens[i];
-    const extras: string[] = [];
-    items.forEach((other, j) => {
-      if (i === j) return;
-      let shared = 0;
-      for (const t of mine) if (tokens[j].has(t)) shared += 1;
-      if (shared < 2) return;
-      if (isHttpUrl(other.cover) && other.cover !== item.cover) extras.push(other.cover);
-    });
-    const slides = uniqueMedia([...item.slides, ...extras], item.cover);
-    return { ...item, slides };
-  });
-}
 
 function preferEuFirst(items: LiveNewsItem[]): LiveNewsItem[] {
   const eu: LiveNewsItem[] = [];
@@ -206,7 +176,7 @@ async function fetchFinnhub(token: string): Promise<LiveNewsItem[] | null> {
     );
   }
 
-  return attachRelatedSlides(preferEuFirst(mapped).slice(0, 12));
+  return preferEuFirst(mapped).slice(0, 12);
 }
 
 function decodeXml(s: string): string {
@@ -326,7 +296,7 @@ async function fetchRss(): Promise<LiveNewsItem[] | null> {
     seen.add(key);
     unique.push(item);
   }
-  return unique.length ? attachRelatedSlides(unique.slice(0, 12)) : null;
+  return unique.length ? unique.slice(0, 12) : null;
 }
 
 export async function getMarketNews(): Promise<NewsFeedResponse> {

@@ -8,61 +8,40 @@ type Slide =
   | { kind: "video"; src: string }
   | { kind: "image"; src: string };
 
-function buildSlides(item: LiveNewsItem, extra: string[], extraVideo?: string | null): Slide[] {
-  const video = extraVideo || item.video;
-  const photos = [item.cover, ...(item.slides ?? []), ...extra]
-    .filter(Boolean)
-    .filter((src, i, arr) => arr.indexOf(src) === i);
-
+/** Build a clean, non-repeating slide list from the wire data only. */
+function buildSlides(item: LiveNewsItem): Slide[] {
   const slides: Slide[] = [];
-  if (video) slides.push({ kind: "video", src: video });
-  for (const src of photos) {
+
+  // Video first if available
+  if (item.video) slides.push({ kind: "video", src: item.video });
+
+  // Real HTTP images from the wire (slides array is already deduplicated HTTP-only)
+  const realImages = item.slides.filter((s) => /^https?:\/\//i.test(s));
+  for (const src of realImages) {
     if (slides.length >= 3) break;
     slides.push({ kind: "image", src });
   }
-  if (!slides.length) slides.push({ kind: "image", src: item.cover });
+
+  // If no real images at all, show cover (may be local stock photo — but only once)
+  if (!slides.length) {
+    slides.push({ kind: "image", src: item.cover });
+  }
+
   return slides;
 }
 
-function NewsSlider({
-  item,
-  active,
-}: {
-  item: LiveNewsItem;
-  active: boolean;
-}) {
-  const [slides, setSlides] = useState<Slide[]>(() => buildSlides(item, item.slides));
+function NewsMedia({ item, active }: { item: LiveNewsItem; active: boolean }) {
+  const slides = buildSlides(item);
   const [index, setIndex] = useState(0);
   const startX = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Reset when item changes
   useEffect(() => {
-    setSlides(buildSlides(item, item.slides));
     setIndex(0);
-  }, [item.id, item.cover, item.video]);
+  }, [item.id]);
 
-  useEffect(() => {
-    if (!active || !item.url) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch(`/api/news/media?url=${encodeURIComponent(item.url!)}`);
-        const json = (await res.json()) as {
-          ok?: boolean;
-          images?: string[];
-          video?: string | null;
-        };
-        if (cancelled || !json.ok) return;
-        setSlides(buildSlides(item, json.images ?? [], json.video));
-      } catch {
-        /* keep wire slides */
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [active, item]);
-
+  // Play/pause video
   useEffect(() => {
     const el = videoRef.current;
     if (!el) return;
@@ -73,101 +52,101 @@ function NewsSlider({
     }
   }, [active, index, slides]);
 
-  const go = (dir: number) => {
+  const go = (dir: number) =>
     setIndex((i) => (i + dir + slides.length) % slides.length);
-  };
+
+  const multi = slides.length > 1;
+  const current = slides[index];
 
   return (
-    <div className="relative mt-4 overflow-hidden rounded-xl bg-[#0b1b3a]">
+    <div className="relative mt-4 overflow-hidden rounded-xl bg-[#060e1c]">
+      {/* Slide track */}
       <div
-        className="flex aspect-[16/9] w-full touch-pan-y transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
-        style={{ transform: `translateX(-${index * 100}%)` }}
-        onPointerDown={(e) => {
-          startX.current = e.clientX;
-        }}
+        className="flex aspect-[16/9] touch-pan-y overflow-hidden"
+        onPointerDown={(e) => { startX.current = e.clientX; }}
         onPointerUp={(e) => {
           if (startX.current == null) return;
           const dx = e.clientX - startX.current;
           startX.current = null;
-          if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+          if (Math.abs(dx) > 36) go(dx < 0 ? 1 : -1);
         }}
       >
-        {slides.map((s, i) => (
-          <div key={`${s.kind}-${s.src}-${i}`} className="relative h-full w-full shrink-0">
-            {s.kind === "video" ? (
-              <video
-                ref={i === index ? videoRef : undefined}
-                className="absolute inset-0 h-full w-full object-cover"
-                src={s.src}
-                poster={item.cover}
-                muted
-                playsInline
-                loop
-                preload="metadata"
-                aria-label={`${item.title} video`}
-              />
-            ) : (
-              <Image
-                src={s.src}
-                alt=""
-                fill
-                unoptimized
-                sizes="(max-width: 768px) 100vw, 640px"
-                className="object-cover"
-              />
-            )}
-          </div>
-        ))}
+        <div
+          className="flex h-full w-full flex-none transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+          style={{ transform: `translateX(-${index * 100}%)`, width: `${slides.length * 100}%` }}
+        >
+          {slides.map((s, i) => (
+            <div key={i} className="relative h-full" style={{ width: `${100 / slides.length}%` }}>
+              {s.kind === "video" ? (
+                <video
+                  ref={i === index ? videoRef : undefined}
+                  className="absolute inset-0 h-full w-full object-cover"
+                  src={s.src}
+                  poster={item.cover}
+                  muted
+                  playsInline
+                  loop
+                  preload="metadata"
+                />
+              ) : (
+                <Image
+                  src={s.src}
+                  alt={item.title}
+                  fill
+                  unoptimized
+                  sizes="(max-width: 768px) 100vw, 640px"
+                  className={`object-cover transition-transform duration-[1.8s] ease-out ${active && i === index ? "scale-[1.04]" : "scale-100"}`}
+                />
+              )}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-transparent" />
+      {/* Gradient overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
 
-      {slides.length > 1 && (
+      {/* Prev / Next arrows — only when multi */}
+      {multi && (
         <>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              go(-1);
-            }}
-            className="absolute left-2 top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"
-            aria-label="Previous photo"
+            onClick={(e) => { e.stopPropagation(); go(-1); }}
+            className="absolute left-2.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-[18px] leading-none text-white backdrop-blur-sm transition hover:bg-black/70"
+            aria-label="Previous"
           >
             ‹
           </button>
           <button
             type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              go(1);
-            }}
-            className="absolute right-2 top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"
-            aria-label="Next photo"
+            onClick={(e) => { e.stopPropagation(); go(1); }}
+            className="absolute right-2.5 top-1/2 z-10 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-[18px] leading-none text-white backdrop-blur-sm transition hover:bg-black/70"
+            aria-label="Next"
           >
             ›
           </button>
         </>
       )}
 
-      <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end justify-between gap-3">
-        <p className="text-[12px] font-medium text-white/90">
+      {/* Bottom bar */}
+      <div className="absolute bottom-0 left-0 right-0 z-10 flex items-center justify-between gap-3 px-3 pb-3 pt-6">
+        <span className="flex items-center gap-1.5 text-[11px] font-medium text-white/80">
+          {current.kind === "video" && (
+            <span className="flex h-4 w-4 items-center justify-center rounded-sm bg-red-600">
+              <span className="block h-0 w-0 border-b-4 border-l-[7px] border-t-4 border-b-transparent border-l-white border-t-transparent" />
+            </span>
+          )}
           {item.source} · {item.time} CET
-          {slides[index]?.kind === "video" ? " · Video" : ""}
-        </p>
-        {slides.length > 1 && (
-          <div className="flex gap-1.5">
-            {slides.map((s, i) => (
+        </span>
+        {multi && (
+          <div className="flex gap-1">
+            {slides.map((_, i) => (
               <button
-                key={`dot-${i}`}
+                key={i}
                 type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIndex(i);
-                }}
-                className={`h-1.5 rounded-full transition-all ${
-                  i === index ? "w-4 bg-white" : "w-1.5 bg-white/40"
-                }`}
-                aria-label={s.kind === "video" ? "Video slide" : `Photo ${i + 1}`}
+                onClick={(e) => { e.stopPropagation(); setIndex(i); }}
+                className={`h-1.5 rounded-full transition-all ${i === index ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
+                aria-label={`Slide ${i + 1}`}
               />
             ))}
           </div>
@@ -190,24 +169,20 @@ function NewsRow({ item }: { item: LiveNewsItem }) {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
       >
+        {/* Thumb — always shows the cover photo */}
         <span className="relative mt-0.5 hidden h-14 w-20 shrink-0 overflow-hidden rounded-lg sm:block">
-          <Image
-            src={item.cover}
-            alt=""
-            fill
-            unoptimized
-            sizes="80px"
-            className="object-cover"
-          />
+          <Image src={item.cover} alt="" fill unoptimized sizes="80px" className="object-cover" />
         </span>
+
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
-            <span className="rounded-md bg-ink/90 px-1.5 py-0.5 text-white">
-              {item.source}
-            </span>
+            <span className="rounded-md bg-ink/90 px-1.5 py-0.5 text-white">{item.source}</span>
             <span>{item.category}</span>
             <span aria-hidden>·</span>
             <span>{item.time}</span>
+            {item.video && (
+              <span className="rounded-md bg-[#0b1b3a] px-1.5 py-0.5 text-white">Video</span>
+            )}
           </span>
           <span className="mt-2 block text-[15px] font-semibold leading-snug text-ink">
             {item.title}
@@ -216,69 +191,54 @@ function NewsRow({ item }: { item: LiveNewsItem }) {
             {item.summary}
           </span>
         </span>
+
         <span
-          className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-white text-ink transition-transform duration-300 ${
-            open ? "rotate-180" : ""
-          }`}
+          className={`mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[var(--line)] bg-white text-ink transition-transform duration-300 ${open ? "rotate-180" : ""}`}
           aria-hidden
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d="M3.5 5.25L7 8.75L10.5 5.25"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
+            <path d="M3.5 5.25L7 8.75L10.5 5.25" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </span>
       </button>
 
+      {/* Accordion body */}
       <div
         id={panelId}
         role="region"
         aria-label={item.title}
-        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
-          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
-        }`}
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"}`}
       >
         <div className="overflow-hidden">
-          <div className="border-t border-[var(--line)] px-4 pb-4 pt-1">
-            <NewsSlider item={item} active={open} />
+          <div className="border-t border-[var(--line)] px-4 pb-5 pt-1">
+            <NewsMedia item={item} active={open} />
 
-            <p className="mt-4 text-[12px] text-muted">{item.source}</p>
-
-            <p className="mt-3 text-[14px] leading-relaxed text-body">
-              {item.detail}
-            </p>
+            <p className="mt-4 text-[14px] leading-relaxed text-body">{item.detail}</p>
 
             {item.bullets.length > 0 && (
               <ul className="mt-3 space-y-2">
                 {item.bullets.map((b) => (
-                  <li
-                    key={b}
-                    className="flex gap-2 text-[13px] leading-snug text-ink/90"
-                  >
-                    <span
-                      className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#3b6ef5]"
-                      aria-hidden
-                    />
+                  <li key={b} className="flex gap-2 text-[13px] leading-snug text-ink/90">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#3b6ef5]" aria-hidden />
                     <span>{b}</span>
                   </li>
                 ))}
               </ul>
             )}
 
-            {item.url ? (
+            {item.url && (
               <a
                 href={item.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex text-[13px] font-semibold text-[#3b6ef5] transition hover:opacity-80"
+                className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-[#3b6ef5] transition hover:opacity-75"
               >
-                Read full story →
+                Read full story
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+                  <path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
               </a>
-            ) : null}
+            )}
           </div>
         </div>
       </div>
@@ -296,27 +256,14 @@ export function NewsPanel() {
     (async () => {
       try {
         const res = await fetch("/api/news?limit=6");
-        const json = (await res.json()) as {
-          ok?: boolean;
-          items?: LiveNewsItem[];
-        };
+        const json = (await res.json()) as { ok?: boolean; items?: LiveNewsItem[] };
         if (mounted.current && json.ok && json.items?.length) {
-          setItems(
-            json.items.map((n) => ({
-              ...n,
-              slides: n.slides?.length ? n.slides : [n.cover],
-            }))
-          );
+          setItems(json.items);
         }
-      } catch {
-        /* keep fallback */
-      } finally {
-        if (mounted.current) setLoading(false);
-      }
+      } catch { /* keep fallback */ }
+      finally { if (mounted.current) setLoading(false); }
     })();
-    return () => {
-      mounted.current = false;
-    };
+    return () => { mounted.current = false; };
   }, []);
 
   return (
@@ -327,8 +274,7 @@ export function NewsPanel() {
       <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
         Finance and politics
       </h2>
-
-      <ul className={`mt-5 space-y-3 ${loading ? "opacity-80" : ""}`}>
+      <ul className={`mt-5 space-y-3 transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}>
         {items.map((item) => (
           <NewsRow key={item.id} item={item} />
         ))}
