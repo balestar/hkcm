@@ -8,6 +8,10 @@ export type LiveNewsItem = {
   source: string;
   time: string;
   cover: string;
+  /** Up to 3 real story images for the expand slider. */
+  slides: string[];
+  /** Optional muted story video when the wire or article provides one. */
+  video?: string;
   detail: string;
   bullets: string[];
   url?: string;
@@ -35,6 +39,7 @@ export const FALLBACK_NEWS: LiveNewsItem[] = [
     source: "Europe Markets Desk",
     time: "08:12",
     cover: "/news/dax-floor.jpg",
+    slides: ["/news/dax-floor.jpg", "/news/brussels-markets.jpg", "/news/ecb-policy.jpg"],
     detail:
       "Cash equities across the euro area opened with a constructive tone as exporters led the advance.",
     bullets: [
@@ -53,6 +58,7 @@ export const FALLBACK_NEWS: LiveNewsItem[] = [
     source: "EU Energy Watch",
     time: "09:40",
     cover: "/news/berlin-grid.jpg",
+    slides: ["/news/berlin-grid.jpg", "/news/dax-floor.jpg", "/news/brussels-markets.jpg"],
     detail:
       "Capitals are aligning on a faster permitting track for high-voltage grid corridors and storage projects.",
     bullets: [
@@ -71,6 +77,8 @@ export const FALLBACK_NEWS: LiveNewsItem[] = [
     source: "Eurozone Macro",
     time: "10:05",
     cover: "/news/ecb-policy.jpg",
+    slides: ["/news/ecb-policy.jpg", "/news/dax-floor.jpg", "/news/berlin-grid.jpg"],
+    video: "/news/ecb-brief.mp4",
     detail:
       "The ECB left key rates unchanged and kept the door open on both sides of the reaction function.",
     bullets: [
@@ -89,6 +97,7 @@ export const FALLBACK_NEWS: LiveNewsItem[] = [
     source: "EU Policy Brief",
     time: "11:22",
     cover: "/news/brussels-markets.jpg",
+    slides: ["/news/brussels-markets.jpg", "/news/ecb-policy.jpg", "/news/berlin-grid.jpg"],
     detail:
       "The Commission’s capital-markets package advances disclosure simplification and cross-border distribution rules.",
     bullets: [

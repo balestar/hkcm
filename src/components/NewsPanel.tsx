@@ -4,30 +4,174 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { FALLBACK_NEWS, type LiveNewsItem } from "@/lib/newsTypes";
 
-function NewsPreview({
+type Slide =
+  | { kind: "video"; src: string }
+  | { kind: "image"; src: string };
+
+function buildSlides(item: LiveNewsItem, extra: string[], extraVideo?: string | null): Slide[] {
+  const video = extraVideo || item.video;
+  const photos = [item.cover, ...(item.slides ?? []), ...extra]
+    .filter(Boolean)
+    .filter((src, i, arr) => arr.indexOf(src) === i);
+
+  const slides: Slide[] = [];
+  if (video) slides.push({ kind: "video", src: video });
+  for (const src of photos) {
+    if (slides.length >= 3) break;
+    slides.push({ kind: "image", src });
+  }
+  if (!slides.length) slides.push({ kind: "image", src: item.cover });
+  return slides;
+}
+
+function NewsSlider({
   item,
   active,
 }: {
   item: LiveNewsItem;
   active: boolean;
 }) {
+  const [slides, setSlides] = useState<Slide[]>(() => buildSlides(item, item.slides));
+  const [index, setIndex] = useState(0);
+  const startX = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    setSlides(buildSlides(item, item.slides));
+    setIndex(0);
+  }, [item.id, item.cover, item.video]);
+
+  useEffect(() => {
+    if (!active || !item.url) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`/api/news/media?url=${encodeURIComponent(item.url!)}`);
+        const json = (await res.json()) as {
+          ok?: boolean;
+          images?: string[];
+          video?: string | null;
+        };
+        if (cancelled || !json.ok) return;
+        setSlides(buildSlides(item, json.images ?? [], json.video));
+      } catch {
+        /* keep wire slides */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [active, item]);
+
+  useEffect(() => {
+    const el = videoRef.current;
+    if (!el) return;
+    if (active && slides[index]?.kind === "video") {
+      void el.play().catch(() => {});
+    } else {
+      el.pause();
+    }
+  }, [active, index, slides]);
+
+  const go = (dir: number) => {
+    setIndex((i) => (i + dir + slides.length) % slides.length);
+  };
+
   return (
     <div className="relative mt-4 overflow-hidden rounded-xl bg-[#0b1b3a]">
-      <div className="relative aspect-[16/9] w-full">
-        <Image
-          src={item.cover}
-          alt=""
-          fill
-          unoptimized
-          sizes="(max-width: 768px) 100vw, 640px"
-          className={`object-cover transition-transform duration-[1.4s] ease-out ${
-            active ? "scale-105" : "scale-100"
-          }`}
-        />
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-transparent" />
-        <p className="absolute bottom-3 left-3 right-3 text-[12px] font-medium text-white/90">
+      <div
+        className="flex aspect-[16/9] w-full touch-pan-y transition-transform duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]"
+        style={{ transform: `translateX(-${index * 100}%)` }}
+        onPointerDown={(e) => {
+          startX.current = e.clientX;
+        }}
+        onPointerUp={(e) => {
+          if (startX.current == null) return;
+          const dx = e.clientX - startX.current;
+          startX.current = null;
+          if (Math.abs(dx) > 40) go(dx < 0 ? 1 : -1);
+        }}
+      >
+        {slides.map((s, i) => (
+          <div key={`${s.kind}-${s.src}-${i}`} className="relative h-full w-full shrink-0">
+            {s.kind === "video" ? (
+              <video
+                ref={i === index ? videoRef : undefined}
+                className="absolute inset-0 h-full w-full object-cover"
+                src={s.src}
+                poster={item.cover}
+                muted
+                playsInline
+                loop
+                preload="metadata"
+                aria-label={`${item.title} video`}
+              />
+            ) : (
+              <Image
+                src={s.src}
+                alt=""
+                fill
+                unoptimized
+                sizes="(max-width: 768px) 100vw, 640px"
+                className="object-cover"
+              />
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0b1b3a]/75 via-transparent to-transparent" />
+
+      {slides.length > 1 && (
+        <>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(-1);
+            }}
+            className="absolute left-2 top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"
+            aria-label="Previous photo"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              go(1);
+            }}
+            className="absolute right-2 top-1/2 z-10 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full bg-black/45 text-white backdrop-blur-sm"
+            aria-label="Next photo"
+          >
+            ›
+          </button>
+        </>
+      )}
+
+      <div className="absolute bottom-3 left-3 right-3 z-10 flex items-end justify-between gap-3">
+        <p className="text-[12px] font-medium text-white/90">
           {item.source} · {item.time} CET
+          {slides[index]?.kind === "video" ? " · Video" : ""}
         </p>
+        {slides.length > 1 && (
+          <div className="flex gap-1.5">
+            {slides.map((s, i) => (
+              <button
+                key={`dot-${i}`}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIndex(i);
+                }}
+                className={`h-1.5 rounded-full transition-all ${
+                  i === index ? "w-4 bg-white" : "w-1.5 bg-white/40"
+                }`}
+                aria-label={s.kind === "video" ? "Video slide" : `Photo ${i + 1}`}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -100,7 +244,7 @@ function NewsRow({ item }: { item: LiveNewsItem }) {
       >
         <div className="overflow-hidden">
           <div className="border-t border-[var(--line)] px-4 pb-4 pt-1">
-            <NewsPreview item={item} active={open} />
+            <NewsSlider item={item} active={open} />
 
             <p className="mt-4 text-[12px] text-muted">{item.source}</p>
 
@@ -157,7 +301,12 @@ export function NewsPanel() {
           items?: LiveNewsItem[];
         };
         if (mounted.current && json.ok && json.items?.length) {
-          setItems(json.items);
+          setItems(
+            json.items.map((n) => ({
+              ...n,
+              slides: n.slides?.length ? n.slides : [n.cover],
+            }))
+          );
         }
       } catch {
         /* keep fallback */
