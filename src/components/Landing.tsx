@@ -469,6 +469,8 @@ export function Landing() {
           </div>
         </section>
 
+        <AnalysisCarousel slides={CHART_ANALYSES} />
+
         <section className="animate-rise-delay-1 mb-8">
           <div className="mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
@@ -493,8 +495,6 @@ export function Landing() {
             ))}
           </ul>
         </section>
-
-        <AnalysisCarousel slides={CHART_ANALYSES} />
 
       </main>
 
