@@ -4,6 +4,24 @@ import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { FALLBACK_NEWS, type LiveNewsItem } from "@/lib/newsTypes";
 
+const CATEGORY_STYLES: Record<string, string> = {
+  Markets:     "bg-[#1a3a6b] text-[#7eb8ff]",
+  Rates:       "bg-[#1a2f1a] text-[#66cc66]",
+  Macro:       "bg-[#2a1f3a] text-[#b07ff5]",
+  Crypto:      "bg-[#2a1f00] text-[#f5a623]",
+  Movers:      "bg-[#0e2a28] text-[#26cba8]",
+  Commodities: "bg-[#2a1a0e] text-[#e08040]",
+};
+
+function CategoryPill({ category }: { category: string }) {
+  const cls = CATEGORY_STYLES[category] ?? "bg-ink/20 text-muted";
+  return (
+    <span className={`rounded-md px-1.5 py-0.5 font-semibold ${cls}`}>
+      {category}
+    </span>
+  );
+}
+
 type Slide =
   | { kind: "video"; src: string }
   | { kind: "image"; src: string };
@@ -177,7 +195,7 @@ function NewsRow({ item }: { item: LiveNewsItem }) {
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted">
             <span className="rounded-md bg-ink/90 px-1.5 py-0.5 text-white">{item.source}</span>
-            <span>{item.category}</span>
+            <CategoryPill category={item.category} />
             <span aria-hidden>·</span>
             <span>{item.time}</span>
             {item.video && (
@@ -269,10 +287,10 @@ export function NewsPanel() {
   return (
     <section className="panel animate-rise-delay-4 p-5 sm:p-6">
       <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-        Markets &amp; policy
+        Markets &amp; movers
       </p>
       <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
-        Finance and politics
+        Finance &amp; markets
       </h2>
       <ul className={`mt-5 space-y-3 transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}>
         {items.map((item) => (

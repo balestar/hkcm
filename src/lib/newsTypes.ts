@@ -2,7 +2,7 @@
 
 export type LiveNewsItem = {
   id: string;
-  category: "Markets" | "Politics" | "Policy" | "Crypto" | "Rates";
+  category: "Markets" | "Rates" | "Macro" | "Crypto" | "Movers" | "Commodities";
   title: string;
   summary: string;
   source: string;
@@ -51,26 +51,26 @@ export const FALLBACK_NEWS: LiveNewsItem[] = [
   },
   {
     id: "n2",
-    category: "Politics",
-    title: "EU capitals signal faster grid investment path",
+    category: "Movers",
+    title: "EU utilities rally as grid investment fast-track advances",
     summary:
-      "Member-state talks point to streamlined permitting for energy infrastructure across the Union.",
+      "Member-state alignment on streamlined permitting lifts energy infrastructure names across the bloc.",
     source: "EU Energy Watch",
     time: "09:40",
     cover: "/news/berlin-grid.jpg",
     slides: [],
     detail:
-      "Capitals are aligning on a faster permitting track for high-voltage grid corridors and storage projects.",
+      "Capitals are aligning on a faster permitting track for high-voltage grid corridors, lifting utilities and grid operators.",
     bullets: [
-      "Streamlined cross-border permitting for priority corridors.",
-      "Utilities most sensitive to legislative language.",
-      "Council–Parliament sequencing still in focus.",
+      "Streamlined permitting removes a key capex uncertainty for EU utilities.",
+      "Grid equipment suppliers see order-book upgrades.",
+      "Regulatory timeline will drive re-rating of affected names.",
     ],
     publishedAt: 0,
   },
   {
     id: "n3",
-    category: "Policy",
+    category: "Rates",
     title: "ECB holds; markets price a longer pause",
     summary:
       "Front-end rates steady as policymakers keep optionality into year-end.",
@@ -90,7 +90,7 @@ export const FALLBACK_NEWS: LiveNewsItem[] = [
   },
   {
     id: "n4",
-    category: "Politics",
+    category: "Movers",
     title: "Brussels advances capital-markets package",
     summary:
       "Draft rules aim to deepen retail participation across member states.",

@@ -18,7 +18,15 @@ const FALLBACK_COVERS = [
 ];
 
 const EU_HINT =
-  /\b(eu|europe|euro|ecb|eurozone|brussels|frankfurt|paris|berlin|amsterdam|madrid|milan|stoxx|dax|bund|lagarde|commission|parliament|nato|ukraine|germany|france|italy|spain|netherlands|austria|belgium|ireland|portugal|poland|nordic)\b/i;
+  /\b(eu|europe|euro|ecb|eurozone|brussels|frankfurt|paris|berlin|amsterdam|madrid|milan|stoxx|dax|bund|lagarde|germany|france|italy|spain|netherlands|austria|belgium|ireland|portugal|poland|nordic)\b/i;
+
+/** Must contain at least one market/finance signal to be included. */
+const FINANCE_REQUIRED =
+  /\b(market|stock|share|equit|index|indices|fund|bond|yield|rate|bund|treasury|gilt|spread|swap|euribor|fx|forex|dollar|euro(?:zone)?|eur|usd|gbp|jpy|sterling|franc|krone|currency|inflation|deflat|cpi|ppi|pce|gdp|growth|recession|ecb|fed(?:eral reserve)?|central bank|rate cut|rate hike|basis point|\bbps\b|oil|crude|brent|wti|natural gas|commodity|commodities|gold|silver|metal|mining|ipo|earn|profit|revenue|ebitda|guidance|outlook|quarter|fiscal|dividend|buyback|m&a|merger|acquisition|takeover|private equity|hedge fund|\betf\b|derivative|option|futures|trade balance|current account|debt|deficit|surplus|liquidity|credit|lending|deposit|mortgage|repo|eurostoxx|stoxx|dax|cac|ftse|s&p|nasdaq|dow|nikkei|hang seng|crypto|bitcoin|btc|ethereum|eth|stablecoin|cbdc|defi|blockchain asset)\b/i;
+
+/** Hard noise — exclude even if finance keywords are present (pure non-market politics). */
+const NOISE_BLOCK =
+  /\b(military strike|troops deployed|airstrike|combat|battlefield|frontline|asylum seeker|migrant boat|refugee camp|flood damage|earthquake casualty|wildfire evacuat|hurricane landfall|terror attack|drug bust|murder trial|verdict sentenc|election result|coalition talks|party leadership|protest march|union strike|picket line)\b/i;
 
 type FinnhubArticle = {
   category?: string;
@@ -65,16 +73,18 @@ function formatTime(ts: number): string {
 
 function categorize(text: string): LiveNewsItem["category"] {
   const t = text.toLowerCase();
-  if (/\b(bitcoin|crypto| eth\b|btc|ethereum|token)\b/.test(t)) return "Crypto";
-  if (/\b(rate|yield|bond|ecb|fed|inflation|cpi|interest)\b/.test(t)) return "Rates";
-  if (
-    /\b(parliament|commission|election|minister|coalition|sanction|policy|regulation)\b/.test(
-      t
-    )
-  )
-    return "Politics";
-  if (/\b(policy|regulation|directive|oversight)\b/.test(t)) return "Policy";
+  if (/\b(bitcoin|crypto|\beth\b|btc|ethereum|stablecoin|defi|cbdc)\b/.test(t)) return "Crypto";
+  if (/\b(rate|yield|bond|bund|ecb|fed|inflation|deflat|cpi|ppi|interest|monetary|hawkish|dovish|basis point|spread|euribor|repo)\b/.test(t)) return "Rates";
+  if (/\b(gdp|growth|recession|unemployment|pmi|ism|trade balance|current account|output|industrial|manufacture|retail sales|consumer confidence|macro)\b/.test(t)) return "Macro";
+  if (/\b(ipo|merger|acquisition|takeover|m&a|buyback|dividend|earn|revenue|ebitda|guidance|profit|quarter|fiscal)\b/.test(t)) return "Movers";
+  if (/\b(oil|crude|brent|wti|gas|gold|silver|metal|commodity|commodities|copper|wheat|corn|soybean)\b/.test(t)) return "Commodities";
   return "Markets";
+}
+
+/** Return true only if the article is genuinely market / finance focused. */
+function isFinanceArticle(title: string, summary: string): boolean {
+  const text = `${title} ${summary}`;
+  return FINANCE_REQUIRED.test(text) && !NOISE_BLOCK.test(text);
 }
 
 function bulletsFrom(summary: string): string[] {
@@ -135,7 +145,7 @@ function preferEuFirst(items: LiveNewsItem[]): LiveNewsItem[] {
 }
 
 async function fetchFinnhub(token: string): Promise<LiveNewsItem[] | null> {
-  const categories = ["general", "forex", "crypto"] as const;
+  const categories = ["general", "forex", "crypto", "merger"] as const;
   const collected: FinnhubArticle[] = [];
 
   await Promise.all(
@@ -157,6 +167,9 @@ async function fetchFinnhub(token: string): Promise<LiveNewsItem[] | null> {
   for (const a of collected) {
     const title = a.headline?.trim();
     if (!title || !a.datetime) continue;
+    const summary = a.summary?.trim() || title;
+    // Strict finance gate — skip non-market articles
+    if (!isFinanceArticle(title, summary)) continue;
     const key = title.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
@@ -165,8 +178,8 @@ async function fetchFinnhub(token: string): Promise<LiveNewsItem[] | null> {
         {
           id: `fh-${a.id ?? mapped.length}`,
           title,
-          summary: a.summary?.trim() || title,
-          source: a.source || "Finnhub",
+          summary,
+          source: a.source || "Markets Wire",
           datetime: a.datetime,
           image: a.image,
           url: a.url,
@@ -264,8 +277,18 @@ async function fetchRss(): Promise<LiveNewsItem[] | null> {
       source: "European Central Bank",
     },
     {
-      url: "https://news.google.com/rss/search?q=European+Union+OR+ECB+OR+eurozone+finance+when:2d&hl=en&gl=DE&ceid=DE:en",
-      source: "EU Finance Wire",
+      // Reuters Markets & Finance feed
+      url: "https://feeds.reuters.com/reuters/businessNews",
+      source: "Reuters Markets",
+    },
+    {
+      // FT markets (public RSS)
+      url: "https://www.ft.com/markets?format=rss",
+      source: "Financial Times",
+    },
+    {
+      url: "https://news.google.com/rss/search?q=eurozone+OR+ECB+OR+DAX+OR+eurostoxx+markets+finance+when:1d&hl=en&gl=DE&ceid=DE:en",
+      source: "EU Markets Wire",
     },
   ];
 
@@ -291,6 +314,8 @@ async function fetchRss(): Promise<LiveNewsItem[] | null> {
   const seen = new Set<string>();
   const unique: LiveNewsItem[] = [];
   for (const item of merged) {
+    // Only keep genuine market / finance stories
+    if (!isFinanceArticle(item.title, item.summary)) continue;
     const key = item.title.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);
