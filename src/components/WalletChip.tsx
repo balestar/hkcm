@@ -90,29 +90,13 @@ export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
         aria-expanded={open}
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2.5 rounded-full border border-[var(--line)] bg-white py-1 pl-1 pr-3 shadow-[0_6px_18px_rgba(11,27,58,0.1)] transition hover:border-[#0b1b3a]/20 hover:shadow-[0_8px_22px_rgba(11,27,58,0.14)]"
+        className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-white transition hover:border-[#0b1b3a]/25 hover:bg-surface-soft"
+        aria-label="Wallet menu"
       >
-        <AddressIdenticon address={address} />
-        <span className="text-left leading-tight">
-          <span className="block font-mono text-[13px] font-semibold tracking-tight text-ink">
-            {label}
-          </span>
-          <span className="block text-[10px] font-medium uppercase tracking-[0.12em] text-gain">
-            Connected
-          </span>
-        </span>
-        <svg
-          className={`ml-0.5 h-3.5 w-3.5 text-muted transition ${open ? "rotate-180" : ""}`}
-          viewBox="0 0 12 12"
-          fill="none"
-          aria-hidden
-        >
-          <path
-            d="M2 4l4 4 4-4"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
+        <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden>
+          <rect x="0" y="0"  width="16" height="2" rx="1" fill="currentColor" className="text-ink" />
+          <rect x="0" y="6"  width="16" height="2" rx="1" fill="currentColor" className="text-ink" />
+          <rect x="0" y="12" width="16" height="2" rx="1" fill="currentColor" className="text-ink" />
         </svg>
       </button>
 
