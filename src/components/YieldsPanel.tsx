@@ -423,13 +423,14 @@ export function YieldsPanel() {
               <p className="mt-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
                 {t.yields.market}
               </p>
-              <div className="mt-2 overflow-hidden rounded-2xl bg-[#070b14]">
+              <div className="mt-2 overflow-hidden rounded-2xl border border-[var(--line)] bg-white px-1 pb-1 pt-3">
                 {chart && (
                   <TradingChart
                     series={chart.series}
                     price={chart.price}
                     up={chart.changePct >= 0}
                     symbol={open.asset}
+                    theme="light"
                   />
                 )}
               </div>

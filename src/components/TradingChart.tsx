@@ -149,17 +149,70 @@ function sma(values: number[], period: number): (number | null)[] {
   return out;
 }
 
+type ChartTheme = "dark" | "light";
+
 type TradingChartProps = {
   series: number[];
   price: string;
   up: boolean;
   symbol: string;
+  theme?: ChartTheme;
 };
 
-export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
+const THEME = {
+  dark: {
+    price: "text-white",
+    ohlc: "text-white/40",
+    ohlcKey: "text-white/55",
+    ohlcDot: "text-white/20",
+    tfOn: "bg-[rgba(196,163,90,0.18)] text-[#e4d0a0]",
+    tfOff: "text-white/40 hover:text-white/75",
+    grid: "rgba(196,163,90,0.07)",
+    axis: "rgba(228,208,160,0.38)",
+    time: "rgba(228,208,160,0.32)",
+    sep: "rgba(196,163,90,0.1)",
+    vol: "rgba(228,208,160,0.28)",
+    ma: "rgba(255,255,255,0.38)",
+    hover: "rgba(228,208,160,0.28)",
+    lastFg: "#061018",
+    wash: "0.08",
+    washGold: GOLD,
+    ring: "rgba(6,16,24,0.9)",
+    lastDash: { up: "rgba(38,166,154,0.55)", down: "rgba(239,83,80,0.55)" },
+  },
+  light: {
+    price: "text-ink",
+    ohlc: "text-body",
+    ohlcKey: "text-muted",
+    ohlcDot: "text-[var(--line)]",
+    tfOn: "bg-[#0b1b3a] text-white",
+    tfOff: "text-muted hover:text-ink",
+    grid: "rgba(11, 27, 58, 0.06)",
+    axis: "rgba(74, 91, 120, 0.72)",
+    time: "rgba(74, 91, 120, 0.55)",
+    sep: "rgba(11, 27, 58, 0.08)",
+    vol: "rgba(132, 148, 173, 0.85)",
+    ma: "rgba(74, 91, 120, 0.75)",
+    hover: "rgba(11, 27, 58, 0.18)",
+    lastFg: "#ffffff",
+    wash: "0",
+    washGold: "#0b1b3a",
+    ring: "#ffffff",
+    lastDash: { up: "rgba(15, 159, 110, 0.45)", down: "rgba(225, 29, 72, 0.4)" },
+  },
+} as const;
+
+export function TradingChart({ series, price, up, symbol, theme = "dark" }: TradingChartProps) {
   const [tf, setTf] = useState<Tf>("1H");
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const skin = THEME[theme];
+  const fadeId = `chartFade-${theme}`;
+  const washId = `volFade-${theme}`;
+  const bullColor = theme === "light" ? "#0f9f6e" : BULL;
+  const bearColor = theme === "light" ? "#e11d48" : BEAR;
+  const maFast = theme === "light" ? "#3b6ef5" : "#7eb6ff";
+  const maSlow = theme === "light" ? "#8a6d2f" : GOLD;
 
   const candles = useMemo(
     () => buildCandles(series, price, tf, up),
@@ -257,11 +310,11 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
   }
 
   return (
-    <div className="-mx-5 sm:-mx-6">
-      <div className="flex flex-wrap items-end justify-between gap-3 px-5 sm:px-6">
+    <div className={theme === "light" ? "" : "-mx-5 sm:-mx-6"}>
+      <div className={`flex flex-wrap items-end justify-between gap-3 ${theme === "light" ? "px-3" : "px-5 sm:px-6"}`}>
         <div className="min-w-0">
           <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="font-mono text-[1.35rem] font-semibold tracking-tight text-white">
+            <span className={`font-mono text-[1.35rem] font-semibold tracking-tight ${skin.price}`}>
               {formatAxisPrice(active.c, price)}
             </span>
             <span
@@ -274,16 +327,16 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
               {chgPct.toFixed(2)}%)
             </span>
           </div>
-          <p className="mt-1 font-mono text-[11px] tracking-wide text-white/40">
-            <span className="text-white/55">O</span>{" "}
+          <p className={`mt-1 font-mono text-[11px] tracking-wide ${skin.ohlc}`}>
+            <span className={skin.ohlcKey}>O</span>{" "}
             {formatAxisPrice(active.o, price)}{" "}
-            <span className="text-white/55">H</span>{" "}
+            <span className={skin.ohlcKey}>H</span>{" "}
             {formatAxisPrice(active.h, price)}{" "}
-            <span className="text-white/55">L</span>{" "}
+            <span className={skin.ohlcKey}>L</span>{" "}
             {formatAxisPrice(active.l, price)}{" "}
-            <span className="text-white/55">C</span>{" "}
+            <span className={skin.ohlcKey}>C</span>{" "}
             {formatAxisPrice(active.c, price)}
-            <span className="mx-2 text-white/20">·</span>
+            <span className={`mx-2 ${skin.ohlcDot}`}>·</span>
             {symbol} · {tf}
           </p>
         </div>
@@ -298,9 +351,7 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
                 setHover(null);
               }}
               className={`rounded-md px-2.5 py-1 text-[11px] font-semibold transition ${
-                tf === t
-                  ? "bg-[rgba(196,163,90,0.18)] text-[#e4d0a0]"
-                  : "text-white/40 hover:text-white/75"
+                tf === t ? skin.tfOn : skin.tfOff
               }`}
             >
               {t}
@@ -319,17 +370,17 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
         onMouseLeave={() => setHover(null)}
       >
         <defs>
-          <linearGradient id="chartFade" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id={fadeId} x1="0" y1="0" x2="0" y2="1">
             <stop
               offset="0%"
-              stopColor={up ? BULL : BEAR}
-              stopOpacity="0.14"
+              stopColor={up ? bullColor : bearColor}
+              stopOpacity={theme === "light" ? "0.10" : "0.14"}
             />
-            <stop offset="100%" stopColor={up ? BULL : BEAR} stopOpacity="0" />
+            <stop offset="100%" stopColor={up ? bullColor : bearColor} stopOpacity="0" />
           </linearGradient>
-          <linearGradient id="volFade" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={GOLD} stopOpacity="0.08" />
-            <stop offset="100%" stopColor={GOLD} stopOpacity="0" />
+          <linearGradient id={washId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={skin.washGold} stopOpacity={skin.wash} />
+            <stop offset="100%" stopColor={skin.washGold} stopOpacity="0" />
           </linearGradient>
         </defs>
 
@@ -339,7 +390,7 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
           y={0}
           width={W}
           height={H}
-          fill="url(#volFade)"
+          fill={`url(#${washId})`}
           opacity="0.55"
         />
 
@@ -350,14 +401,14 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
               x2={padL + plotW}
               y1={y}
               y2={y}
-              stroke="rgba(196,163,90,0.07)"
+              stroke={skin.grid}
               strokeWidth={1}
             />
             <text
               x={W - 6}
               y={y + 3.5}
               textAnchor="end"
-              fill="rgba(228,208,160,0.38)"
+              fill={skin.axis}
               fontSize="10"
               fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
             >
@@ -372,14 +423,14 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
           x2={padL + plotW}
           y1={volTop - 2}
           y2={volTop - 2}
-          stroke="rgba(196,163,90,0.1)"
+          stroke={skin.sep}
           strokeWidth={1}
         />
 
         <text
           x={padL + 2}
           y={volTop + 11}
-          fill="rgba(228,208,160,0.28)"
+          fill={skin.vol}
           fontSize="9"
           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
         >
@@ -398,31 +449,39 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
               y={y}
               width={bodyW}
               height={Math.max(1, h)}
-              fill={bull ? "rgba(38,166,154,0.32)" : "rgba(239,83,80,0.32)"}
+              fill={
+                bull
+                  ? theme === "light"
+                    ? "rgba(15,159,110,0.22)"
+                    : "rgba(38,166,154,0.32)"
+                  : theme === "light"
+                    ? "rgba(225,29,72,0.18)"
+                    : "rgba(239,83,80,0.32)"
+              }
             />
           );
         })}
 
-        <path d={closeArea} fill="url(#chartFade)" />
+        <path d={closeArea} fill={`url(#${fadeId})`} />
 
         <path
           d={ma21Path}
           fill="none"
-          stroke={GOLD}
+          stroke={maSlow}
           strokeWidth="1.15"
           opacity="0.75"
         />
         <path
           d={ma9Path}
           fill="none"
-          stroke="#7eb6ff"
+          stroke={maFast}
           strokeWidth="1.2"
           opacity="0.85"
         />
 
         {candles.map((c, i) => {
           const bull = c.c >= c.o;
-          const color = bull ? BULL : BEAR;
+          const color = bull ? bullColor : bearColor;
           const x = xAt(i);
           const yO = yAt(c.o);
           const yC = yAt(c.c);
@@ -455,7 +514,7 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
           x2={padL + plotW}
           y1={yAt(last.c)}
           y2={yAt(last.c)}
-          stroke={up ? "rgba(38,166,154,0.55)" : "rgba(239,83,80,0.55)"}
+          stroke={up ? skin.lastDash.up : skin.lastDash.down}
           strokeWidth="1"
           strokeDasharray="3 3"
         />
@@ -465,13 +524,13 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
           width={padR - 4}
           height={16}
           rx={2}
-          fill={up ? BULL : BEAR}
+          fill={up ? bullColor : bearColor}
         />
         <text
           x={W - 5}
           y={yAt(last.c) + 3.5}
           textAnchor="end"
-          fill="#061018"
+          fill={skin.lastFg}
           fontSize="9.5"
           fontWeight="700"
           fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
@@ -486,7 +545,7 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
               x2={xAt(hi)}
               y1={priceTop}
               y2={chartBottom}
-              stroke="rgba(228,208,160,0.28)"
+              stroke={skin.hover}
               strokeWidth="1"
               strokeDasharray="2 3"
             />
@@ -495,7 +554,7 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
               x2={padL + plotW}
               y1={yAt(active.c)}
               y2={yAt(active.c)}
-              stroke="rgba(228,208,160,0.28)"
+              stroke={skin.hover}
               strokeWidth="1"
               strokeDasharray="2 3"
             />
@@ -503,8 +562,8 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
               cx={xAt(hi)}
               cy={yAt(active.c)}
               r={3.2}
-              fill={activeUp ? BULL : BEAR}
-              stroke="rgba(6,16,24,0.9)"
+              fill={activeUp ? bullColor : bearColor}
+              stroke={skin.ring}
               strokeWidth="1.5"
             />
           </g>
@@ -516,7 +575,7 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
             x={xAt(i)}
             y={H - 6}
             textAnchor="middle"
-            fill="rgba(228,208,160,0.32)"
+            fill={skin.time}
             fontSize="10"
             fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
           >
@@ -525,12 +584,12 @@ export function TradingChart({ series, price, up, symbol }: TradingChartProps) {
         ))}
 
         <g transform={`translate(${padL + 2}, ${padT + 2})`}>
-          <line x1="0" y1="6" x2="12" y2="6" stroke="#7eb6ff" strokeWidth="1.4" />
-          <text x="16" y="9" fill="rgba(255,255,255,0.38)" fontSize="9">
+          <line x1="0" y1="6" x2="12" y2="6" stroke={maFast} strokeWidth="1.4" />
+          <text x="16" y="9" fill={skin.ma} fontSize="9">
             MA9
           </text>
-          <line x1="46" y1="6" x2="58" y2="6" stroke={GOLD} strokeWidth="1.4" />
-          <text x="62" y="9" fill="rgba(255,255,255,0.38)" fontSize="9">
+          <line x1="46" y1="6" x2="58" y2="6" stroke={maSlow} strokeWidth="1.4" />
+          <text x="62" y="9" fill={skin.ma} fontSize="9">
             MA21
           </text>
         </g>
