@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress, getAddress } from "ethers";
 import { supabaseAdmin } from "@/lib/supabase";
+import { upsertPushSubscription } from "@/lib/hostInbox";
 
 export const runtime = "nodejs";
 
@@ -20,20 +21,12 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const db = supabaseAdmin();
-    const { error } = await db.from("hkcm_push_subscriptions").upsert(
-      {
-        address: getAddress(json.address),
-        endpoint: json.endpoint,
-        p256dh: json.keys.p256dh,
-        auth: json.keys.auth,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "endpoint" }
-    );
-    if (error) {
-      return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
-    }
+    await upsertPushSubscription(supabaseAdmin(), {
+      address: getAddress(json.address),
+      endpoint: json.endpoint,
+      p256dh: json.keys.p256dh,
+      auth: json.keys.auth,
+    });
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("[notifications/subscribe]", err);

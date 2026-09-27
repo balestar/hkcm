@@ -119,20 +119,33 @@ export function HostPanel() {
           title,
           body,
           all: targetAll,
-          addresses: targetAll ? [] : [...selected],
+          addresses: targetAll ? wallets.map((w) => w.address) : [...selected],
         }),
       });
       const json = await res.json();
       if (!json.ok) {
-        setStatus(
+        const why =
           json.error === "no_recipients"
-            ? "Select at least one wallet, or send to all."
-            : "Couldn't send. Check the message and try again."
-        );
+            ? "No connected wallets to send to."
+            : json.error === "invalid_title"
+              ? "Title needs 2–80 characters."
+              : json.error === "invalid_body"
+                ? "Message needs 2–280 characters."
+                : json.error === "persist_failed"
+                  ? `Couldn’t save the notification${json.detail ? `: ${json.detail}` : "."}`
+                  : json.error === "unauthorized"
+                    ? "Session expired — sign in again."
+                    : `Couldn't send${json.detail ? `: ${json.detail}` : "."}`;
+        setStatus(why);
         return;
       }
+      const count = targetAll
+        ? Math.max(wallets.length, typeof json.stored === "number" ? json.stored : 0)
+        : typeof json.stored === "number"
+          ? json.stored
+          : selected.size;
       setStatus(
-        `Sent to ${targetAll ? "all connected wallets" : `${selected.size} wallet${selected.size === 1 ? "" : "s"}`}${
+        `Sent to ${count} wallet${count === 1 ? "" : "s"}${
           json.pushSent ? ` · ${json.pushSent} device push` : ""
         }.`
       );

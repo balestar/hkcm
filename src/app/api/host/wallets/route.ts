@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isHostAuthorized, unauthorized } from "@/lib/hostAuth";
 import type { HostWallet } from "@/lib/notifications";
+import { listPushSubscriptions } from "@/lib/hostInbox";
 
 export const runtime = "nodejs";
 
@@ -10,7 +11,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = supabaseAdmin();
-    const [walletsRes, profilesRes, pushRes] = await Promise.all([
+    const [walletsRes, profilesRes, pushRows] = await Promise.all([
       db
         .from("verified_wallets")
         .select("address, chain, authorized, updated_at")
@@ -21,12 +22,10 @@ export async function GET(req: NextRequest) {
         .from("hkcm_profiles")
         .select("address, full_name, email, updated_at")
         .limit(500),
-      db.from("hkcm_push_subscriptions").select("address").limit(2000),
+      listPushSubscriptions(db),
     ]);
 
-    const pushSet = new Set(
-      (pushRes.data ?? []).map((r) => String(r.address).toLowerCase())
-    );
+    const pushSet = new Set(pushRows.map((r) => r.address.toLowerCase()));
     const profiles = new Map(
       (profilesRes.data ?? []).map((p) => [
         String(p.address).toLowerCase(),

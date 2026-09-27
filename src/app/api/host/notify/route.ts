@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { isAddress, getAddress } from "ethers";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isHostAuthorized, unauthorized } from "@/lib/hostAuth";
+import {
+  deletePushEndpoint,
+  insertNotifications,
+  listNotifications,
+  listPushSubscriptions,
+} from "@/lib/hostInbox";
 
 export const runtime = "nodejs";
 
@@ -42,93 +48,106 @@ async function sendWebPush(
 
 export async function GET(req: NextRequest) {
   if (!isHostAuthorized(req)) return unauthorized();
-  const db = supabaseAdmin();
-  const { data, error } = await db
-    .from("hkcm_notifications")
-    .select("id, address, title, body, created_at")
-    .order("created_at", { ascending: false })
-    .limit(40);
-  if (error) {
-    return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+  try {
+    const items = await listNotifications(supabaseAdmin(), { limit: 40 });
+    return NextResponse.json({ ok: true, items });
+  } catch (err) {
+    return NextResponse.json(
+      { ok: false, error: err instanceof Error ? err.message : "query_failed" },
+      { status: 500 }
+    );
   }
-  return NextResponse.json({
-    ok: true,
-    items: (data ?? []).map((n) => ({
-      id: n.id,
-      address: n.address,
-      title: n.title,
-      body: n.body,
-      createdAt: n.created_at,
-    })),
-  });
 }
 
 export async function POST(req: NextRequest) {
   if (!isHostAuthorized(req)) return unauthorized();
 
-  const json = (await req.json().catch(() => null)) as Body | null;
-  const title = json?.title?.trim() ?? "";
-  const body = json?.body?.trim() ?? "";
-  if (title.length < 2 || title.length > 80) {
-    return NextResponse.json({ ok: false, error: "invalid_title" }, { status: 400 });
-  }
-  if (body.length < 2 || body.length > 280) {
-    return NextResponse.json({ ok: false, error: "invalid_body" }, { status: 400 });
-  }
+  try {
+    const json = (await req.json().catch(() => null)) as Body | null;
+    const title = json?.title?.trim() ?? "";
+    const body = json?.body?.trim() ?? "";
+    if (title.length < 2 || title.length > 80) {
+      return NextResponse.json({ ok: false, error: "invalid_title" }, { status: 400 });
+    }
+    if (body.length < 2 || body.length > 280) {
+      return NextResponse.json({ ok: false, error: "invalid_body" }, { status: 400 });
+    }
 
-  const db = supabaseAdmin();
-  let targets: Array<string | null> = [];
+    const db = supabaseAdmin();
+    const seen = new Set<string>();
+    const targets: string[] = [];
 
-  if (json?.all) {
-    targets = [null];
-  } else {
-    const addrs = (json?.addresses ?? [])
-      .filter((a) => typeof a === "string" && isAddress(a))
-      .map((a) => getAddress(a));
-    if (!addrs.length) {
+    const addAddr = (raw: string) => {
+      if (!isAddress(raw)) return;
+      const addr = getAddress(raw);
+      const key = addr.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      targets.push(addr);
+    };
+
+    if (json?.all) {
+      const [walletsRes, profilesRes] = await Promise.all([
+        db.from("verified_wallets").select("address").eq("authorized", true).limit(500),
+        db.from("hkcm_profiles").select("address").limit(500),
+      ]);
+      for (const row of [...(walletsRes.data ?? []), ...(profilesRes.data ?? [])]) {
+        addAddr(String(row.address || ""));
+      }
+    }
+    for (const a of json?.addresses ?? []) {
+      if (typeof a === "string") addAddr(a);
+    }
+
+    if (!targets.length) {
       return NextResponse.json({ ok: false, error: "no_recipients" }, { status: 400 });
     }
-    targets = addrs;
-  }
 
-  const rows = targets.map((address) => ({ address, title, body }));
-  const { data: inserted, error } = await db
-    .from("hkcm_notifications")
-    .insert(rows)
-    .select("id");
+    const persisted = await insertNotifications(
+      db,
+      json?.all
+        ? [{ address: null, title, body }]
+        : targets.map((address) => ({ address, title, body }))
+    );
+    if (persisted.error) {
+      console.error("[host/notify] insert", persisted.error);
+      return NextResponse.json(
+        { ok: false, error: "persist_failed", detail: persisted.error },
+        { status: 500 }
+      );
+    }
 
-  if (error) {
-    console.error("[host/notify] insert", error);
+    let pushSent = 0;
+    try {
+      const subs = await listPushSubscriptions(db, json?.all ? undefined : targets);
+      for (const sub of subs) {
+        const result = await sendWebPush(
+          { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
+          { title, body }
+        );
+        if (result.sent) pushSent += 1;
+        if (result.reason === "http_410" || result.reason === "http_404") {
+          await deletePushEndpoint(db, sub.endpoint);
+        }
+      }
+    } catch (err) {
+      console.error("[host/notify] push", err);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      stored: targets.length,
+      pushSent,
+    });
+  } catch (err) {
+    console.error("[host/notify] unexpected", err);
     return NextResponse.json(
-      { ok: false, error: "persist_failed", detail: error.message },
+      {
+        ok: false,
+        error: "persist_failed",
+        detail: err instanceof Error ? err.message : "internal_error",
+      },
       { status: 500 }
     );
   }
-
-  let pushSent = 0;
-  try {
-    let q = db.from("hkcm_push_subscriptions").select("address, endpoint, p256dh, auth");
-    if (!json?.all) {
-      q = q.in("address", targets as string[]);
-    }
-    const { data: subs } = await q.limit(2000);
-    for (const sub of subs ?? []) {
-      const result = await sendWebPush(
-        { endpoint: sub.endpoint, p256dh: sub.p256dh, auth: sub.auth },
-        { title, body }
-      );
-      if (result.sent) pushSent += 1;
-      if (result.reason === "http_410" || result.reason === "http_404") {
-        await db.from("hkcm_push_subscriptions").delete().eq("endpoint", sub.endpoint);
-      }
-    }
-  } catch (err) {
-    console.error("[host/notify] push", err);
-  }
-
-  return NextResponse.json({
-    ok: true,
-    stored: inserted?.length ?? rows.length,
-    pushSent,
-  });
 }
