@@ -34,9 +34,9 @@ export function AppShell() {
             <h2 className="mt-5 font-display text-[1.25rem] tracking-[-0.03em] text-ink">
               {verifying ? t.gate.signing : t.gate.preparing}
             </h2>
-            <p className="mt-2 text-sm text-body">
-              {verifying ? t.gate.finishPrompt : t.gate.connecting}
-            </p>
+            {!verifying && (
+              <p className="mt-2 text-sm text-body">{t.gate.connecting}</p>
+            )}
             {verifyError && (
               <div className="mt-5 space-y-3">
                 <p className="text-sm text-loss">{verifyError}</p>

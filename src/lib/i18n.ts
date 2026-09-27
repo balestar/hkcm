@@ -22,7 +22,6 @@ const de = {
   gate: {
     signing: "Anmeldung",
     preparing: "Wird vorbereitet…",
-    finishPrompt: "Bitte die Anfrage in Ihrer Wallet bestätigen.",
     connecting: "Wallet wird sicher verbunden.",
     retry: "Erneut versuchen",
   },
@@ -159,7 +158,6 @@ const en: typeof de = {
   gate: {
     signing: "Signing in",
     preparing: "Preparing…",
-    finishPrompt: "Finish the prompt in your wallet.",
     connecting: "Connecting your wallet securely.",
     retry: "Try again",
   },
