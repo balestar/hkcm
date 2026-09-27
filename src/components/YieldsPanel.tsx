@@ -344,23 +344,12 @@ export function YieldsPanel() {
       )}
 
       {open && desk && (
-        <div className="fixed inset-x-0 bottom-0 top-14 z-50">
-          <button
-            type="button"
-            aria-label={t.yields.close}
-            onClick={dismiss}
-            className="absolute inset-0 bg-[#050b18]/35"
-            style={{
-              animation: leaving ? undefined : "sheetDim 0.32s ease both",
-              opacity: leaving ? 0 : Math.max(0.08, 1 - dragY / 420),
-              transition: dragging ? "none" : "opacity 0.28s ease",
-            }}
-          />
+        <div className="fixed inset-0 z-[80]">
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="yield-desk-title"
-            className="absolute inset-x-0 bottom-0 top-0 flex flex-col overflow-hidden rounded-t-[22px] border border-[var(--line)] bg-white shadow-[0_-18px_48px_rgba(11,27,58,0.16)]"
+            className="absolute inset-0 flex flex-col overflow-hidden bg-white"
             style={{
               transform: leaving
                 ? "translate3d(0, 104%, 0)"
@@ -376,7 +365,7 @@ export function YieldsPanel() {
               onPointerUp={onHandleUp}
               onPointerCancel={onHandleUp}
             >
-              <div className="flex justify-center pt-2.5 pb-1">
+              <div className="flex justify-center pb-1 pt-[max(0.65rem,env(safe-area-inset-top))]">
                 <span className="h-1.5 w-11 rounded-full bg-[var(--line)]" />
               </div>
               <div className="flex items-center justify-between border-b border-[var(--line)] px-5 pb-3.5">
