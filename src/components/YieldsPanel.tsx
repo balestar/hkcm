@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
+import { createPortal } from "react-dom";
 import { YIELDS, type YieldItem } from "@/lib/data";
 import { instrumentById } from "@/lib/marketUniverse";
 import { TradingChart } from "@/components/TradingChart";
@@ -72,6 +73,11 @@ export function YieldsPanel() {
   const dragStart = useRef(0);
   const dragFrom = useRef(0);
   const leaveTimer = useRef<number | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     setActive(readActive(address));
@@ -302,9 +308,12 @@ export function YieldsPanel() {
         })}
       </ul>
 
+      {mounted &&
+        createPortal(
+          <>
       {open && !desk && (
         <div
-          className="fixed inset-0 z-50 grid place-items-end bg-[#050b18]/40 p-0 sm:place-items-center sm:p-6"
+          className="fixed inset-0 z-[80] grid place-items-end bg-[#050b18]/40 p-0 sm:place-items-center sm:p-6"
           onClick={closeAll}
         >
           <div
@@ -455,6 +464,9 @@ export function YieldsPanel() {
           </div>
         </div>
       )}
+          </>,
+          document.body
+        )}
     </section>
   );
 }
