@@ -49,6 +49,19 @@ const de = {
     riskLow: "Niedrig",
     riskMedium: "Mittel",
     risk: (r: string) => `${r === "Low" ? "Niedrig" : "Mittel"}es Risiko`,
+    activate: "Aktivieren",
+    checking: "Prüfen…",
+    activated: "Rendite ist aktiv.",
+    topUp: "Rendite konnte nicht aktiviert werden. Bitte Wallet aufstocken.",
+    checkFailed: "Salden konnten nicht geprüft werden. Bitte erneut versuchen.",
+    notes: {
+      usdc:
+        "USDC Reserve hält USDC. Tägliche Erträge werden automatisch angesammelt, solange der Bestand in der Wallet bleibt.",
+      bond:
+        "EU Bond Ladder setzt USDC in eine gestaffelte Anleiheposition um. Erträge laufen über die Laufzeit auf.",
+      eth:
+        "ETH Basket hält ETH. Tägliche Erträge werden zum Satz von 8,7 % p.a. angesammelt.",
+    },
   },
   charts: {
     eyebrow: "Charts",
@@ -158,6 +171,19 @@ const en: typeof de = {
     riskLow: "Low",
     riskMedium: "Medium",
     risk: (r: string) => `${r} risk`,
+    activate: "Activate",
+    checking: "Checking…",
+    activated: "Yield is active.",
+    topUp: "Unable to activate yield. Kindly top up your wallet.",
+    checkFailed: "Couldn’t check balances. Try again.",
+    notes: {
+      usdc:
+        "USDC Reserve holds USDC. Daily yield accumulates automatically while the balance stays in your wallet.",
+      bond:
+        "EU Bond Ladder deploys USDC into a staggered bond position. Yield accrues over the term.",
+      eth:
+        "ETH Basket holds ETH. Daily yield accumulates at 8.7% p.a.",
+    },
   },
   account: {
     eyebrow: "Account summary",

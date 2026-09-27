@@ -19,12 +19,16 @@ export type PickItem = {
   };
 };
 
+export type YieldAsset = "USDC" | "ETH";
+
 export type YieldItem = {
   id: string;
   name: string;
   apy: string;
   risk: "Low" | "Medium";
   lock: string;
+  asset: YieldAsset;
+  noteKey: "usdc" | "bond" | "eth";
 };
 
 export const ACCOUNT = {
@@ -39,10 +43,12 @@ export const ACCOUNT = {
 export const YIELDS: YieldItem[] = [
   {
     id: "y1",
-    name: "EUR Cash Reserve",
+    name: "USDC Reserve",
     apy: "3.25%",
     risk: "Low",
     lock: "Flexible",
+    asset: "USDC",
+    noteKey: "usdc",
   },
   {
     id: "y2",
@@ -50,13 +56,17 @@ export const YIELDS: YieldItem[] = [
     apy: "3.90%",
     risk: "Low",
     lock: "6–18 mo",
+    asset: "USDC",
+    noteKey: "bond",
   },
   {
     id: "y3",
-    name: "ETH yield sleeve",
-    apy: "3.10%",
+    name: "ETH Basket",
+    apy: "8.7%",
     risk: "Medium",
     lock: "Flexible",
+    asset: "ETH",
+    noteKey: "eth",
   },
 ];
 
