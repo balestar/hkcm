@@ -283,7 +283,7 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
     <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/20">
       <div className="border-b border-[rgba(196,163,90,0.1)] px-4 py-2.5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
-          Live stream · {pick.symbol}
+          Live chat
         </p>
       </div>
 

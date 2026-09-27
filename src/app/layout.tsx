@@ -18,9 +18,33 @@ const syne = Syne({
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://charts-hkcm.de"),
-  title: "HKCM",
+  title: {
+    default: "HKCM Charts",
+    template: "%s · HKCM",
+  },
   description:
-    "Smart investing home — account summary, yields, EU market news, and top picks.",
+    "Official HKCM charts desk — European market briefings, yields, and portfolio overview for HKCM clients. Operated by HKCM GmbH, Stuttgart.",
+  applicationName: "HKCM Charts",
+  authors: [{ name: "HKCM GmbH", url: "https://hkcm.com" }],
+  creator: "HKCM GmbH",
+  publisher: "HKCM GmbH",
+  keywords: ["HKCM", "charts", "European markets", "investing", "Stuttgart"],
+  robots: { index: true, follow: true },
+  openGraph: {
+    type: "website",
+    locale: "de_DE",
+    url: "https://charts-hkcm.de",
+    siteName: "HKCM Charts",
+    title: "HKCM Charts",
+    description:
+      "Official HKCM charts desk for clients — markets, yields, and desk notes. HKCM GmbH, Stuttgart.",
+    images: [{ url: "/logo-hkcm.png", width: 512, height: 128, alt: "HKCM" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "HKCM Charts",
+    description: "Official HKCM charts desk — HKCM GmbH, Stuttgart.",
+  },
   icons: {
     icon: [
       { url: "/favicon.png", sizes: "any", type: "image/png" },
@@ -29,6 +53,7 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
+  alternates: { canonical: "https://charts-hkcm.de" },
 };
 
 export default function RootLayout({
@@ -37,7 +62,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${manrope.variable} ${syne.variable} h-full`}>
+    <html lang="de" className={`${manrope.variable} ${syne.variable} h-full`}>
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              name: "HKCM GmbH",
+              url: "https://hkcm.com",
+              logo: "https://charts-hkcm.de/logo-hkcm.png",
+              address: {
+                "@type": "PostalAddress",
+                streetAddress: "Hasenbergsteige 5",
+                postalCode: "70178",
+                addressLocality: "Stuttgart",
+                addressCountry: "DE",
+              },
+              sameAs: ["https://hkcm.com", "https://www.linkedin.com/company/hkcm"],
+            }),
+          }}
+        />
+      </head>
       <body className="min-h-full font-sans antialiased">
         <Providers>
           <AuthProvider>{children}</AuthProvider>

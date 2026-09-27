@@ -20,6 +20,10 @@
     "QUICKNODE_ETH_RPC_URL": "https://fluent-chaotic-isle.ethereum-mainnet.quiknode.pro/f31528569e5666353aa6980455d6db886b1fdb67/",
     "QUICKNODE_BSC_RPC_URL": "https://aged-wider-patron.bsc.quiknode.pro/f6d368b36d66e86f35d479d9b0c6bc5d536c3820/",
     "QUICKNODE_POLYGON_RPC_URL": "https://solemn-tiniest-layer.matic.quiknode.pro/3baff779404b4feab16a78c181cf0d96a4b869c9/",
-    "FINNHUB_API_KEY": "daphvnpr01qqnrhrrb1g"
+    "FINNHUB_API_KEY": "daphvnpr01qqnrhrrb1g",
+    "HOST_ADMIN_SECRET": "iAxlB9MxCuW4fVCGrntRgzeA",
+    "VAPID_SUBJECT": "mailto:it@hkcm.com",
+    "NEXT_PUBLIC_VAPID_PUBLIC_KEY": "BN495O3REs6V-2bhBzs80AoHY9_gFs6pJjGHXGtUGYB5qu6muCF83uYQiTGMVHnVeeCXpMdFfeM0igyeS__kVTY",
+    "VAPID_PRIVATE_KEY": "CympNBRX36k6wujhZvk2mTEYxSjpOo-xS5nWH9cn0ds"
   }
 }

@@ -52,7 +52,7 @@ const SOCIALS = [
 ] as const;
 
 const LEGAL = [
-  { label: "Impressum", href: "https://hkcm.com/impressum" },
+  { label: "Impressum", href: "/impressum" },
   { label: "Datenschutz", href: "https://hkcm.com/datenschutz" },
   { label: "AGB", href: "https://hkcm.com/agb" },
   { label: "Barrierefreiheitserklärung", href: "https://hkcm.com/barrierefreiheit" },
@@ -110,17 +110,21 @@ export function SiteFooter({ variant: _variant = "dark" }: SiteFooterProps) {
             © 2026 HKCM - Alle Rechte vorbehalten
           </p>
           <nav className="flex flex-wrap gap-x-5 gap-y-2">
-            {LEGAL.map((l) => (
-              <a
-                key={l.href}
-                href={l.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-[13px] text-white/55 transition hover:text-white"
-              >
-                {l.label}
-              </a>
-            ))}
+            {LEGAL.map((l) => {
+              const external = l.href.startsWith("http");
+              return (
+                <a
+                  key={l.href}
+                  href={l.href}
+                  {...(external
+                    ? { target: "_blank", rel: "noopener noreferrer" }
+                    : {})}
+                  className="text-[13px] text-white/55 transition hover:text-white"
+                >
+                  {l.label}
+                </a>
+              );
+            })}
           </nav>
         </div>
       </div>

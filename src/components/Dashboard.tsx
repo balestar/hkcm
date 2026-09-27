@@ -14,6 +14,7 @@ import { ProfilePage } from "@/components/ProfilePage";
 import { SiteFooter } from "@/components/SiteFooter";
 import { TimeGreeting } from "@/components/TimeGreeting";
 import { TopPicksPanel } from "@/components/TopPicksPanel";
+import { NotificationBell } from "@/components/NotificationBell";
 import { WalletChip } from "@/components/WalletChip";
 import { YieldsPanel } from "@/components/YieldsPanel";
 
@@ -64,7 +65,10 @@ export function Dashboard() {
               priority
             />
           </div>
-          <WalletChip onOpenProfile={() => setShowProfile(true)} />
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <WalletChip onOpenProfile={() => setShowProfile(true)} />
+          </div>
         </div>
       </header>
 
