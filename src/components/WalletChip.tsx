@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function shortAddress(address: string) {
   return `${address.slice(0, 6)}…${address.slice(-4)}`;
@@ -50,6 +51,7 @@ function AddressIdenticon({ address }: { address: string }) {
 
 export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
   const { address, logout } = useAuth();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -91,7 +93,7 @@ export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
         aria-haspopup="menu"
         onClick={() => setOpen((v) => !v)}
         className="flex h-9 w-9 items-center justify-center rounded-full border border-[var(--line)] bg-white transition hover:border-[#0b1b3a]/25 hover:bg-surface-soft"
-        aria-label="Wallet menu"
+        aria-label={t.wallet.menu}
       >
         <svg width="16" height="14" viewBox="0 0 16 14" fill="none" aria-hidden>
           <rect x="0" y="0"  width="16" height="2" rx="1" fill="currentColor" className="text-ink" />
@@ -109,7 +111,7 @@ export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
             <AddressIdenticon address={address} />
             <div className="min-w-0 flex-1">
               <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">
-                Wallet
+                {t.wallet.wallet}
               </p>
               <p className="mt-0.5 break-all font-mono text-[12px] leading-snug text-ink">
                 {address}
@@ -123,7 +125,7 @@ export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
             onClick={() => void copy()}
             className="w-full px-4 py-2.5 text-left text-[14px] font-medium text-ink transition hover:bg-surface-soft"
           >
-            {copied ? "Address copied" : "Copy address"}
+            {copied ? t.wallet.copied : t.wallet.copy}
           </button>
           <button
             type="button"
@@ -134,7 +136,7 @@ export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
             }}
             className="w-full px-4 py-2.5 text-left text-[14px] font-medium text-ink transition hover:bg-surface-soft"
           >
-            Profile
+            {t.wallet.profile}
           </button>
           <button
             type="button"
@@ -142,7 +144,7 @@ export function WalletChip({ onOpenProfile }: { onOpenProfile: () => void }) {
             onClick={() => void logout()}
             className="w-full border-t border-[var(--line)] px-4 py-2.5 text-left text-[14px] font-medium text-loss transition hover:bg-surface-soft"
           >
-            Log out
+            {t.wallet.logout}
           </button>
         </div>
       )}

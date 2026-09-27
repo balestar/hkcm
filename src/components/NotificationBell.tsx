@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 import type { DeskNotification } from "@/lib/notifications";
 
 const SEEN_KEY = "hkcm-notif-seen";
@@ -33,6 +34,7 @@ function writeSeen(ids: Set<string>) {
 
 export function NotificationBell() {
   const { address, verified } = useAuth();
+  const { t } = useLanguage();
   const [items, setItems] = useState<DeskNotification[]>([]);
   const [open, setOpen] = useState(false);
   const [perm, setPerm] = useState<NotificationPermission>(
@@ -149,7 +151,7 @@ export function NotificationBell() {
           if (!open) markAll();
         }}
         className="relative grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] bg-white text-ink transition hover:bg-surface-soft"
-        aria-label="Notifications"
+        aria-label={t.notif.label}
       >
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden>
           <path
@@ -175,20 +177,20 @@ export function NotificationBell() {
       {open && (
         <div className="absolute right-0 top-full z-30 mt-2 w-[20rem] overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_18px_48px_rgba(5,12,28,0.16)]">
           <div className="flex items-center justify-between border-b border-[var(--line)] px-4 py-3">
-            <p className="text-[13px] font-semibold text-ink">Notifications</p>
+            <p className="text-[13px] font-semibold text-ink">{t.notif.label}</p>
             {perm !== "granted" && (
               <button
                 type="button"
                 onClick={() => void enablePush()}
                 className="text-[12px] font-semibold text-brand"
               >
-                Enable alerts
+                {t.notif.enable}
               </button>
             )}
           </div>
           <ul className="max-h-72 overflow-y-auto">
             {items.length === 0 && (
-              <li className="px-4 py-6 text-[13px] text-muted">No desk notes yet.</li>
+              <li className="px-4 py-6 text-[13px] text-muted">{t.notif.empty}</li>
             )}
             {items.map((n) => (
               <li key={n.id} className="border-b border-[var(--line)] px-4 py-3 last:border-0">

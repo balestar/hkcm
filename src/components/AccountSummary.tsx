@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 import { formatEur } from "@/lib/data";
 
 type MeHolding = {
@@ -27,6 +28,7 @@ function fmtAmount(n: number) {
 
 export function AccountSummary() {
   const { address } = useAuth();
+  const { t } = useLanguage();
   const [data, setData] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -65,7 +67,7 @@ export function AccountSummary() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-            Account summary
+            {t.account.eyebrow}
           </p>
           <p className="mt-3 font-display text-[2.1rem] tracking-[-0.04em] text-ink sm:text-[2.35rem]">
             {loading ? "…" : formatEur(totalEur)}
@@ -73,10 +75,10 @@ export function AccountSummary() {
           {(loading || error || heldCount === 0) && (
             <p className="mt-1 text-[13px] text-body">
               {loading
-                ? "Reading your wallet…"
+                ? t.account.reading
                 : error
-                  ? "Couldn’t read on-chain balances."
-                  : "No tokens found in this wallet."}
+                  ? t.account.error
+                  : t.account.empty}
             </p>
           )}
         </div>

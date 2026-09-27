@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Syne } from "next/font/google";
 import Providers from "@/components/Providers";
 import { AuthProvider } from "@/components/AuthProvider";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -87,7 +88,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full font-sans antialiased">
         <Providers>
-          <AuthProvider>{children}</AuthProvider>
+          <LanguageProvider>
+            <AuthProvider>{children}</AuthProvider>
+          </LanguageProvider>
         </Providers>
       </body>
     </html>

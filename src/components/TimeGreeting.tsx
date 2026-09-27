@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatDisplayName, greetingForHour } from "@/lib/data";
+import { formatDisplayName } from "@/lib/data";
+import { greetingForLocale } from "@/lib/i18n";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function firstNameFrom(fullName?: string) {
   const trimmed = fullName?.trim();
@@ -18,23 +20,22 @@ export function TimeGreeting({
   /** Profile full name from create-profile; greeting uses the first name. */
   name?: string;
 }) {
+  const { locale, t } = useLanguage();
   const firstName = firstNameFrom(name);
-  const [text, setText] = useState(
-    firstName ? greetingForHour(new Date().getHours(), firstName) : "Welcome"
-  );
+  const [text, setText] = useState(t.greeting.welcome);
 
   useEffect(() => {
     const update = () => {
       if (!firstName) {
-        setText("Welcome");
+        setText(t.greeting.welcome);
         return;
       }
-      setText(greetingForHour(new Date().getHours(), firstName));
+      setText(greetingForLocale(new Date().getHours(), firstName, locale));
     };
     update();
     const id = window.setInterval(update, 60_000);
     return () => window.clearInterval(id);
-  }, [firstName]);
+  }, [firstName, locale, t]);
 
   return (
     <h1

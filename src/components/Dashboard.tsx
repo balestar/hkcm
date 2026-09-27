@@ -17,9 +17,11 @@ import { TopPicksPanel } from "@/components/TopPicksPanel";
 import { NotificationBell } from "@/components/NotificationBell";
 import { WalletChip } from "@/components/WalletChip";
 import { YieldsPanel } from "@/components/YieldsPanel";
+import { useLanguage } from "@/components/LanguageProvider";
 
 export function Dashboard() {
   const { address } = useAuth();
+  const { t } = useLanguage();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileReady, setProfileReady] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
@@ -76,7 +78,7 @@ export function Dashboard() {
         <div className="animate-rise mb-6">
           <TimeGreeting name={profile?.fullName} />
           <p className="mt-2 text-[15px] text-body">
-            Your brief — balances, yields, and what Europe is watching.
+            {t.dash.brief}
           </p>
         </div>
 

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
+import { LanguageSwitch, useLanguage } from "@/components/LanguageProvider";
 import { formatDisplayName, formatEur, YIELDS } from "@/lib/data";
 
 type MeResponse = {
@@ -33,6 +34,7 @@ export function ProfilePage({
   onBack: () => void;
 }) {
   const { logout } = useAuth();
+  const { t } = useLanguage();
   const [data, setData] = useState<MeResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -109,7 +111,7 @@ export function ProfilePage({
             onClick={onBack}
             className="text-[14px] font-medium text-body transition hover:text-ink"
           >
-            ← Dashboard
+            {t.profile.back}
           </button>
           <Image
             src="/logo-hkcm.png"
@@ -127,17 +129,17 @@ export function ProfilePage({
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-                Profile
+                {t.profile.eyebrow}
               </p>
               <h1 className="mt-2 font-display text-[1.6rem] tracking-[-0.03em] text-ink">
                 {fullName?.trim()
                   ? formatDisplayName(fullName)
-                  : "HKCM Investor"}
+                  : t.profile.investor}
               </h1>
               <p className="mt-1 font-mono text-[13px] text-body">{short}</p>
               {email && <p className="mt-0.5 text-[13px] text-body">{email}</p>}
               {loading && (
-                <p className="mt-2 text-[12px] text-muted">Loading portfolio…</p>
+                <p className="mt-2 text-[12px] text-muted">{t.profile.loading}</p>
               )}
             </div>
             <button
@@ -145,23 +147,37 @@ export function ProfilePage({
               onClick={() => void logout()}
               className="rounded-full border border-[var(--line)] bg-surface-elevated px-4 py-2 text-[13px] font-medium text-loss transition hover:opacity-80"
             >
-              Log out
+              {t.profile.logout}
             </button>
           </div>
         </section>
 
         <section className="panel animate-rise-delay-1 mt-4 p-5 sm:mt-5 sm:p-6">
+          <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
+            {t.profile.settings}
+          </p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 className="font-display text-[1.15rem] tracking-[-0.03em] text-ink">
+                {t.profile.language}
+              </h2>
+              <p className="mt-1 text-[13px] text-body">{t.profile.languageHint}</p>
+            </div>
+            <LanguageSwitch />
+          </div>
+        </section>
+
+        <section className="panel animate-rise-delay-2 mt-4 p-5 sm:mt-5 sm:p-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-                Automatic withdrawals
+                {t.profile.autoEyebrow}
               </p>
               <h2 className="mt-2 font-display text-[1.25rem] tracking-[-0.03em] text-ink">
-                Automatic withdrawals
+                {t.profile.autoTitle}
               </h2>
               <p className="mt-1 text-[13px] text-body">
-                When active, earnings are withdrawn automatically up to the monthly
-                limit you set — aligned with what your portfolio yields.
+                {t.profile.autoBody}
               </p>
             </div>
             <button
@@ -185,10 +201,10 @@ export function ProfilePage({
             <div className="mt-6">
               <div className="flex items-baseline justify-between">
                 <p className="text-[13px] font-semibold text-ink">
-                  Monthly limit · {formatEur(cappedLimit)}
+                  {t.profile.monthlyLimit} · {formatEur(cappedLimit)}
                 </p>
                 <p className="text-[12px] text-muted">
-                  Est. yield {formatEur(monthlyYield)} / mo · cap {formatEur(maxLimit)}
+                  {t.profile.estYield(formatEur(monthlyYield), formatEur(maxLimit))}
                 </p>
               </div>
               <input
@@ -208,8 +224,7 @@ export function ProfilePage({
                 />
               </div>
               <p className="mt-2 text-[12px] text-muted">
-                {limitPct}% of your estimated yield capacity — limit stays within
-                what your holdings earn, so principal isn’t touched.
+                {limitPct}% {t.profile.limitHint}
               </p>
             </div>
           )}
@@ -221,10 +236,10 @@ export function ProfilePage({
               disabled={saving}
               className="rounded-full bg-brand px-6 py-2.5 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(59,110,245,0.28)] transition hover:bg-brand-deep disabled:opacity-60"
             >
-              {saving ? "Saving…" : "Save settings"}
+              {saving ? t.profile.saving : t.profile.save}
             </button>
             {saved && (
-              <p className="text-[13px] font-medium text-gain">Saved to your profile</p>
+              <p className="text-[13px] font-medium text-gain">{t.profile.saved}</p>
             )}
           </div>
         </section>

@@ -14,6 +14,7 @@ import {
   type HeadlineNews,
 } from "@/lib/landingContent";
 import { FALLBACK_NEWS } from "@/lib/newsTypes";
+import { LanguageSwitch, useLanguage } from "@/components/LanguageProvider";
 
 function AnalysisChart({
   values,
@@ -347,6 +348,7 @@ function AnalysisCarousel({ slides }: { slides: ChartAnalysis[] }) {
 
 export function Landing() {
   const { login } = useAuth();
+  const { t } = useLanguage();
   const [tab, setTab] = useState<"markets" | "about">("markets");
   const [headlines, setHeadlines] = useState<HeadlineNews[]>(() =>
     FALLBACK_NEWS.slice(0, 4).map((n) => ({
@@ -434,29 +436,31 @@ export function Landing() {
             onClick={() => setTab("markets")}
             className="rounded-full bg-white px-3.5 py-1.5 text-[13px] font-semibold text-ink"
           >
-            Markets
+            {t.landing.markets}
           </button>
           <button
             type="button"
             onClick={() => setTab("about")}
             className="rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-white/75 transition hover:text-white"
           >
-            About us
+            {t.landing.about}
           </button>
         </nav>
+        <div className="absolute right-5 sm:right-10">
+          <LanguageSwitch variant="dark" />
+        </div>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-20 pt-4 sm:px-10">
         <section className="animate-rise max-w-2xl pb-10 pt-4">
           <p className="text-[13px] font-semibold uppercase tracking-[0.18em] text-brand-soft">
-            Markets desk
+            {t.landing.eyebrow}
           </p>
           <h1 className="mt-3 font-display text-[2.6rem] leading-[0.95] tracking-[-0.045em] text-white sm:text-[3.6rem]">
             HKCM
           </h1>
           <p className="mt-4 max-w-lg text-[16px] leading-relaxed text-white/65">
-            Finance headlines, rotating chart analysis from the desk, and comments from the
-            HKCM team — connect when you’re ready.
+            {t.landing.intro}
           </p>
           <div className="mt-7 flex flex-wrap gap-3">
             <button
@@ -464,7 +468,7 @@ export function Landing() {
               onClick={() => void login()}
               className="rounded-full bg-brand px-7 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_32px_rgba(59,110,245,0.35)] transition hover:bg-brand-deep"
             >
-              Login with wallet
+              {t.landing.login}
             </button>
           </div>
         </section>
@@ -474,10 +478,10 @@ export function Landing() {
         <section className="animate-rise-delay-1 mb-8">
           <div className="mb-4">
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/40">
-              Headline news
+              {t.landing.headlines}
             </p>
             <h2 className="mt-1 font-display text-[1.35rem] tracking-[-0.03em] text-white">
-              Top finance stories
+              {t.landing.topStories}
             </h2>
           </div>
           <ul className="divide-y divide-white/10 overflow-hidden rounded-[22px] border border-white/12 bg-white/[0.06] shadow-[0_16px_40px_rgba(5,12,28,0.25)] backdrop-blur-md">

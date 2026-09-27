@@ -10,6 +10,7 @@ import {
 } from "@/lib/data";
 import { formatAgo, nextFeedDelayMs } from "@/lib/dummyFeed";
 import { TradingChart } from "@/components/TradingChart";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function Sparkline({
   series,
@@ -220,6 +221,7 @@ function makeStreamMsg(avoidHandles: string[]): StreamMsg {
 }
 
 function LiveChatFeed({ pick }: { pick: PickItem }) {
+  const { t } = useLanguage();
   const [items, setItems] = useState<StreamMsg[]>([]);
   const [now, setNow] = useState(() => Date.now());
   const [draft, setDraft] = useState("");
@@ -283,7 +285,7 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
     <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/20">
       <div className="border-b border-[rgba(196,163,90,0.1)] px-4 py-2.5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
-          Live chat
+          {t.charts.liveChat}
         </p>
       </div>
 
@@ -309,7 +311,7 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           onKeyDown={(e) => { if (e.key === "Enter") send(); }}
-          placeholder={`Comment on ${pick.symbol}…`}
+          placeholder={t.charts.comment(pick.symbol)}
           className="flex-1 rounded-xl border border-white/12 bg-white/[0.06] px-3 py-2.5 text-[13px] text-white outline-none placeholder:text-white/30 focus:border-[rgba(196,163,90,0.4)]"
         />
         <button
@@ -317,7 +319,7 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
           onClick={send}
           className="rounded-xl bg-[rgba(196,163,90,0.18)] px-4 py-2.5 text-[13px] font-semibold text-[#e4d0a0] transition hover:bg-[rgba(196,163,90,0.28)]"
         >
-          Post
+          {t.charts.post}
         </button>
       </div>
     </div>
@@ -331,6 +333,7 @@ function PickDetail({
   pick: PickItem;
   onBack: () => void;
 }) {
+  const { t } = useLanguage();
   const up = pick.changePct >= 0;
   const [votes, setVotes] = useState(pick.votes);
   const total = votes.up + votes.down;
@@ -348,7 +351,7 @@ function PickDetail({
         onClick={onBack}
         className="text-[13px] font-medium text-[#e4d0a0]/55 transition hover:text-[#e4d0a0]"
       >
-        ← All charts
+        {t.charts.back}
       </button>
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-3">
@@ -383,7 +386,7 @@ function PickDetail({
 
       <div className="mt-6">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
-          Why it matters
+          {t.charts.why}
         </p>
         <p className="mt-2 text-[15px] leading-relaxed text-white/80">{pick.why}</p>
       </div>
@@ -408,10 +411,10 @@ function PickDetail({
       <div className="mt-6">
         <div className="flex items-center justify-between gap-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
-            Chart votes
+            {t.charts.votes}
           </p>
           <p className="text-[12px] text-white/40">
-            {total.toLocaleString("de-DE")} votes
+            {t.charts.votesCount(total.toLocaleString("de-DE"))}
           </p>
         </div>
 
@@ -422,13 +425,13 @@ function PickDetail({
             className="rounded-2xl border border-[#26a69a]/25 bg-[#26a69a]/10 px-4 py-3.5 text-left transition hover:border-[#26a69a]/45 hover:bg-[#26a69a]/16"
           >
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#26a69a]">
-              Bullish
+              {t.charts.bullish}
             </p>
             <p className="mt-1 text-[1.35rem] font-semibold tabular-nums text-white">
               {upPct}%
             </p>
             <p className="mt-0.5 text-[12px] text-white/45">
-              {votes.up.toLocaleString("de-DE")} agree
+              {votes.up.toLocaleString("de-DE")} {t.charts.agree}
             </p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
@@ -444,13 +447,13 @@ function PickDetail({
             className="rounded-2xl border border-[#ef5350]/25 bg-[#ef5350]/10 px-4 py-3.5 text-left transition hover:border-[#ef5350]/45 hover:bg-[#ef5350]/16"
           >
             <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#ef5350]">
-              Bearish
+              {t.charts.bearish}
             </p>
             <p className="mt-1 text-[1.35rem] font-semibold tabular-nums text-white">
               {downPct}%
             </p>
             <p className="mt-0.5 text-[12px] text-white/45">
-              {votes.down.toLocaleString("de-DE")} disagree
+              {votes.down.toLocaleString("de-DE")} {t.charts.disagree}
             </p>
             <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/10">
               <div
@@ -468,6 +471,7 @@ function PickDetail({
 }
 
 export function TopPicksPanel() {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<PickCategory | "All">("All");
   const [selected, setSelected] = useState<PickItem | null>(null);
@@ -497,10 +501,10 @@ export function TopPicksPanel() {
         <div className="flex items-end justify-between gap-3">
           <div>
             <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-              Charts
+              {t.charts.eyebrow}
             </p>
             <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
-              Crypto, stocks, bonds &amp; more
+              {t.charts.title}
             </h2>
           </div>
           <button
@@ -511,7 +515,7 @@ export function TopPicksPanel() {
             }}
             className="shrink-0 rounded-full border border-[var(--line)] bg-surface-elevated px-3.5 py-1.5 text-[13px] font-semibold text-ink transition hover:opacity-80"
           >
-            View all
+            {t.charts.viewAll}
           </button>
         </div>
 
@@ -580,13 +584,13 @@ export function TopPicksPanel() {
             <div className="flex items-center justify-between border-b border-[rgba(196,163,90,0.1)] px-5 py-4 sm:px-6">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#e4d0a0]/45">
-                  Charts
+                  {t.charts.eyebrow}
                 </p>
                 <h2
                   id="charts-title"
                   className="mt-0.5 font-display text-[1.35rem] tracking-[-0.03em] text-white"
                 >
-                  {selected ? selected.symbol : "Charts"}
+                  {selected ? selected.symbol : t.charts.eyebrow}
                 </h2>
               </div>
               <button
@@ -597,7 +601,7 @@ export function TopPicksPanel() {
                 }}
                 className="rounded-full border border-[rgba(196,163,90,0.18)] px-3 py-1.5 text-[13px] font-medium text-white/60 transition hover:border-[rgba(196,163,90,0.35)] hover:text-[#e4d0a0]"
               >
-                Close
+                {t.charts.close}
               </button>
             </div>
 
@@ -619,7 +623,7 @@ export function TopPicksPanel() {
                           : "bg-white/10 text-white/70 hover:text-white"
                       }`}
                     >
-                      All
+                      {t.charts.all}
                     </button>
                     {PICK_CATEGORIES.map((c) => (
                       <button

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useEffect, useId, useRef, useState } from "react";
 import { FALLBACK_NEWS, type LiveNewsItem } from "@/lib/newsTypes";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const CATEGORY_STYLES: Record<string, string> = {
   Markets:     "bg-[#1a3a6b] text-[#7eb8ff]",
@@ -175,6 +176,7 @@ function NewsMedia({ item, active }: { item: LiveNewsItem; active: boolean }) {
 }
 
 function NewsRow({ item }: { item: LiveNewsItem }) {
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const panelId = useId();
 
@@ -251,7 +253,7 @@ function NewsRow({ item }: { item: LiveNewsItem }) {
                 rel="noopener noreferrer"
                 className="mt-4 inline-flex items-center gap-1 text-[13px] font-semibold text-[#3b6ef5] transition hover:opacity-75"
               >
-                Read full story
+                {t.news.readStory}
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
                   <path d="M2 6h8M6 2l4 4-4 4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
@@ -265,6 +267,7 @@ function NewsRow({ item }: { item: LiveNewsItem }) {
 }
 
 export function NewsPanel() {
+  const { t } = useLanguage();
   const [items, setItems] = useState<LiveNewsItem[]>(FALLBACK_NEWS.slice(0, 6));
   const [loading, setLoading] = useState(true);
   const mounted = useRef(true);
@@ -287,10 +290,10 @@ export function NewsPanel() {
   return (
     <section className="panel animate-rise-delay-4 p-5 sm:p-6">
       <p className="text-[12px] font-medium uppercase tracking-[0.14em] text-muted">
-        Markets &amp; movers
+        {t.news.eyebrow}
       </p>
       <h2 className="mt-2 font-display text-[1.35rem] tracking-[-0.03em] text-ink">
-        Finance &amp; markets
+        {t.news.title}
       </h2>
       <ul className={`mt-5 space-y-3 transition-opacity ${loading ? "opacity-60" : "opacity-100"}`}>
         {items.map((item) => (

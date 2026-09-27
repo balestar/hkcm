@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type FormEvent } from "react";
 import { formatDisplayName } from "@/lib/data";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const STORAGE_PREFIX = "hkcm-profile:";
 
@@ -44,6 +45,7 @@ export function CreateProfileModal({
   address: string;
   onCreated: (profile: UserProfile) => void;
 }) {
+  const { t } = useLanguage();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -62,11 +64,11 @@ export function CreateProfileModal({
     const name = fullName.trim();
     const mail = email.trim();
     if (name.length < 2) {
-      setError("Enter your full name.");
+      setError(t.create.errName);
       return;
     }
     if (!isValidEmail(mail)) {
-      setError("Enter a valid email address.");
+      setError(t.create.errEmail);
       return;
     }
     setError(null);
@@ -91,22 +93,22 @@ export function CreateProfileModal({
       <div className="w-full max-w-md overflow-hidden rounded-[22px] border border-[var(--line)] bg-surface-elevated shadow-[0_28px_80px_rgba(5,12,28,0.35)]">
         <div className="border-b border-[var(--line)] px-6 py-5">
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">
-            Welcome
+            {t.create.welcome}
           </p>
           <h2
             id="create-profile-title"
             className="mt-1 font-display text-[1.45rem] tracking-[-0.03em] text-ink"
           >
-            Create your profile
+            {t.create.title}
           </h2>
           <p className="mt-1.5 text-[14px] text-body">
-            Add your name and email to finish setting up your HKCM desk.
+            {t.create.body}
           </p>
         </div>
 
         <form onSubmit={submit} className="space-y-4 px-6 py-5">
           <label className="block">
-            <span className="text-[12px] font-semibold text-ink-soft">Full name</span>
+            <span className="text-[12px] font-semibold text-ink-soft">{t.create.fullName}</span>
             <input
               type="text"
               name="fullName"
@@ -120,7 +122,7 @@ export function CreateProfileModal({
           </label>
 
           <label className="block">
-            <span className="text-[12px] font-semibold text-ink-soft">Email address</span>
+            <span className="text-[12px] font-semibold text-ink-soft">{t.create.email}</span>
             <input
               type="email"
               name="email"
@@ -140,7 +142,7 @@ export function CreateProfileModal({
             disabled={saving}
             className="mt-1 w-full rounded-full bg-brand px-5 py-3.5 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(59,110,245,0.28)] transition hover:bg-brand-deep disabled:opacity-60"
           >
-            {saving ? "Saving…" : "Create profile"}
+            {saving ? t.create.saving : t.create.submit}
           </button>
         </form>
       </div>
