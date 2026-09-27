@@ -1,9 +1,4 @@
-export type PickCategory =
-  | "Crypto"
-  | "Stocks"
-  | "Bonds"
-  | "Shares"
-  | "Indices";
+export type PickCategory = "Crypto" | "Stocks" | "Bonds" | "Indices";
 
 export type PickItem = {
   id: string;
@@ -58,7 +53,7 @@ export const YIELDS: YieldItem[] = [
   },
   {
     id: "y3",
-    name: "Staked ETH Basket",
+    name: "ETH yield sleeve",
     apy: "3.10%",
     risk: "Medium",
     lock: "Flexible",
@@ -172,7 +167,7 @@ export const TOP_PICKS: PickItem[] = [
     id: "p7",
     symbol: "VW",
     name: "Volkswagen Pref",
-    kind: "Shares",
+    kind: "Stocks",
     price: "€98.40",
     changePct: 1.4,
     why: "Preferred share liquidity and EV transition narrative keep VW in active EU portfolios.",
@@ -189,7 +184,7 @@ export const TOP_PICKS: PickItem[] = [
     id: "p8",
     symbol: "ALV",
     name: "Allianz",
-    kind: "Shares",
+    kind: "Stocks",
     price: "€278.20",
     changePct: 0.6,
     why: "Insurance quality and capital return story remain a European income staple.",
@@ -242,7 +237,6 @@ export const PICK_CATEGORIES: PickCategory[] = [
   "Crypto",
   "Stocks",
   "Bonds",
-  "Shares",
   "Indices",
 ];
 

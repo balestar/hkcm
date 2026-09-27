@@ -40,7 +40,7 @@ const de = {
   account: {
     eyebrow: "Kontoübersicht",
     reading: "Wallet wird gelesen…",
-    error: "On-Chain-Salden konnten nicht gelesen werden.",
+    error: "Salden konnten nicht gelesen werden.",
     empty: "Keine Token in dieser Wallet gefunden.",
   },
   yields: {
@@ -55,7 +55,7 @@ const de = {
     title: "Krypto, Aktien, Anleihen & mehr",
     viewAll: "Alle anzeigen",
     all: "Alle",
-    liveChat: "Live-Chat",
+    comments: "Kommentare",
     close: "Schließen",
     back: "← Alle Charts",
     why: "Warum es zählt",
@@ -162,7 +162,7 @@ const en: typeof de = {
   account: {
     eyebrow: "Account summary",
     reading: "Reading your wallet…",
-    error: "Couldn’t read on-chain balances.",
+    error: "Couldn’t load balances.",
     empty: "No tokens found in this wallet.",
   },
   charts: {
@@ -170,7 +170,7 @@ const en: typeof de = {
     title: "Crypto, stocks, bonds & more",
     viewAll: "View all",
     all: "All",
-    liveChat: "Live chat",
+    comments: "Comments",
     close: "Close",
     back: "← All charts",
     why: "Why it matters",

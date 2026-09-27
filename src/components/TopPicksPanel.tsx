@@ -207,20 +207,32 @@ function randomHandle(avoid: Set<string>): { h: string; p: Platform } {
   return (pool.length ? pool : HANDLES)[Math.floor(Math.random() * (pool.length || HANDLES.length))];
 }
 
-function makeStreamMsg(avoidHandles: string[]): StreamMsg {
+function commentText(symbol: string) {
+  const tailored = [
+    `${symbol} hält die Struktur — dips bleiben interessant.`,
+    `${symbol} looks orderly here. Not chasing.`,
+    `Volume in ${symbol} still needs to confirm.`,
+    `${symbol}: session mid is the line for me.`,
+    `Risk/reward in ${symbol} passt. Bin dabei.`,
+    `${symbol} — konstruktiv, solange der Mid hält.`,
+  ];
+  const pool = [...COMMENT_POOL, ...tailored];
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+function makeStreamMsg(avoidHandles: string[], symbol: string): StreamMsg {
   const { h, p } = randomHandle(new Set(avoidHandles));
   const now = Date.now();
-  const text = COMMENT_POOL[Math.floor(Math.random() * COMMENT_POOL.length)];
   return {
     uid: `${h}-${now}-${Math.random().toString(36).slice(2, 6)}`,
     handle: h,
     platform: p,
-    text,
+    text: commentText(symbol),
     createdAt: now - Math.random() * 90_000,
   };
 }
 
-function LiveChatFeed({ pick }: { pick: PickItem }) {
+function CommentsFeed({ pick }: { pick: PickItem }) {
   const { t } = useLanguage();
   const [items, setItems] = useState<StreamMsg[]>([]);
   const [now, setNow] = useState(() => Date.now());
@@ -229,7 +241,9 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
 
   useEffect(() => {
     const seed: StreamMsg[] = [];
-    for (let i = 0; i < 6; i++) seed.push(makeStreamMsg(seed.map((s) => s.handle)));
+    for (let i = 0; i < 6; i++) {
+      seed.push(makeStreamMsg(seed.map((s) => s.handle), pick.symbol));
+    }
     setItems(seed.sort((a, b) => b.createdAt - a.createdAt));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pick.id]);
@@ -253,7 +267,7 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
               .map((m, idx) => idx === i ? { ...m, createdAt: t - Math.random() * 15_000 } : m)
               .sort((a, b) => b.createdAt - a.createdAt);
           }
-          const fresh = makeStreamMsg(prev.slice(0, 4).map((m) => m.handle));
+          const fresh = makeStreamMsg(prev.slice(0, 4).map((m) => m.handle), pick.symbol);
           fresh.createdAt = t;
           return [fresh, ...prev].slice(0, 10);
         });
@@ -285,7 +299,7 @@ function LiveChatFeed({ pick }: { pick: PickItem }) {
     <div className="mt-6 overflow-hidden rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/20">
       <div className="border-b border-[rgba(196,163,90,0.1)] px-4 py-2.5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/45">
-          {t.charts.liveChat}
+          {t.charts.comments}
         </p>
       </div>
 
@@ -465,7 +479,7 @@ function PickDetail({
         </div>
       </div>
 
-      <LiveChatFeed pick={pick} />
+      <CommentsFeed pick={pick} />
     </div>
   );
 }
@@ -475,6 +489,32 @@ export function TopPicksPanel() {
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<PickCategory | "All">("All");
   const [selected, setSelected] = useState<PickItem | null>(null);
+  const [picks, setPicks] = useState<PickItem[]>(TOP_PICKS);
+
+  useEffect(() => {
+    let cancelled = false;
+    const pull = async () => {
+      try {
+        const res = await fetch("/api/markets");
+        const json = (await res.json()) as { ok?: boolean; items?: PickItem[] };
+        if (!cancelled && json.ok && json.items?.length) {
+          setPicks(json.items);
+          setSelected((cur) => {
+            if (!cur) return cur;
+            return json.items?.find((p) => p.id === cur.id) ?? cur;
+          });
+        }
+      } catch {
+        /* keep fallback board */
+      }
+    };
+    void pull();
+    const tick = window.setInterval(pull, 45_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(tick);
+    };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -486,14 +526,11 @@ export function TopPicksPanel() {
   }, [open]);
 
   const filtered = useMemo(
-    () =>
-      category === "All"
-        ? TOP_PICKS
-        : TOP_PICKS.filter((p) => p.kind === category),
-    [category]
+    () => (category === "All" ? picks : picks.filter((p) => p.kind === category)),
+    [category, picks]
   );
 
-  const preview = TOP_PICKS.slice(0, 4);
+  const preview = picks.slice(0, 4);
 
   return (
     <>
@@ -540,6 +577,11 @@ export function TopPicksPanel() {
                       <span className="rounded-md bg-surface-soft px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted">
                         {pick.kind}
                       </span>
+                      {preview[0]?.id === pick.id && (
+                        <span className="rounded-md bg-[rgba(196,163,90,0.16)] px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-[#8a6d2f]">
+                          Desk
+                        </span>
+                      )}
                     </div>
                     <p className="mt-0.5 truncate text-[13px] text-body">
                       {pick.name}

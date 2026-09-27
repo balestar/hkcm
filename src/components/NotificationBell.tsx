@@ -80,7 +80,7 @@ export function NotificationBell() {
             try {
               new Notification(n.title, {
                 body: n.body,
-                icon: "/favicon-32.png",
+                icon: "/favicon.svg",
                 tag: n.id,
               });
             } catch {
