@@ -55,8 +55,8 @@ export function Dashboard() {
         <CreateProfileModal address={address} onCreated={setProfile} />
       )}
 
-      <header className="sticky top-0 z-20 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_86%,white)]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3.5 sm:px-6">
+      <header className="sticky top-0 z-[70] h-14 border-b border-[var(--line)] bg-[color-mix(in_srgb,var(--surface)_86%,white)]/90 backdrop-blur-md">
+        <div className="mx-auto flex h-full max-w-3xl items-center justify-between px-5 sm:px-6">
           <div className="flex items-center gap-2.5">
             <Image
               src="/logo-hkcm.png"

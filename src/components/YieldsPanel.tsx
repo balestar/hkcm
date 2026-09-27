@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { YIELDS, type YieldItem } from "@/lib/data";
 import { instrumentById } from "@/lib/marketUniverse";
 import { TradingChart } from "@/components/TradingChart";
@@ -66,6 +66,12 @@ export function YieldsPanel() {
   const [active, setActive] = useState<Set<string>>(new Set());
   const [balance, setBalance] = useState(0);
   const [chart, setChart] = useState<ChartSnap | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const [dragY, setDragY] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const dragStart = useRef(0);
+  const dragFrom = useRef(0);
+  const leaveTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setActive(readActive(address));
@@ -74,10 +80,7 @@ export function YieldsPanel() {
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOpen(null);
-        setDesk(false);
-      }
+      if (e.key === "Escape") dismiss();
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
@@ -131,6 +134,49 @@ export function YieldsPanel() {
     setOpen(null);
     setDesk(false);
     setMessage(null);
+    setLeaving(false);
+    setDragY(0);
+    setDragging(false);
+  };
+
+  const dismiss = () => {
+    if (leaving) return;
+    setDragging(false);
+    setLeaving(true);
+    setDragY(0);
+    if (leaveTimer.current) window.clearTimeout(leaveTimer.current);
+    leaveTimer.current = window.setTimeout(closeAll, 340);
+  };
+
+  useEffect(() => {
+    if (!desk) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [desk]);
+
+  const onHandleDown = (e: PointerEvent<HTMLDivElement>) => {
+    if (leaving) return;
+    dragStart.current = e.clientY;
+    dragFrom.current = dragY;
+    setDragging(true);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const onHandleMove = (e: PointerEvent<HTMLDivElement>) => {
+    if (!dragging) return;
+    const dy = Math.max(0, e.clientY - dragStart.current + dragFrom.current);
+    setDragY(dy);
+  };
+
+  const onHandleUp = () => {
+    if (!dragging) return;
+    setDragging(false);
+    const threshold = Math.min(160, window.innerHeight * 0.18);
+    if (dragY > threshold) dismiss();
+    else setDragY(0);
   };
 
   const persist = (next: Set<string>) => {
@@ -205,7 +251,7 @@ export function YieldsPanel() {
     setDesk(false);
     setOk(false);
     setMessage(t.yields.liquidated);
-    window.setTimeout(closeAll, 900);
+    window.setTimeout(dismiss, 700);
   };
 
   useEffect(() => {
@@ -298,33 +344,59 @@ export function YieldsPanel() {
       )}
 
       {open && desk && (
-        <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-[#050b18]/45 sm:items-center sm:p-6"
-          onClick={closeAll}
-        >
+        <div className="fixed inset-x-0 bottom-0 top-14 z-50">
+          <button
+            type="button"
+            aria-label={t.yields.close}
+            onClick={dismiss}
+            className="absolute inset-0 bg-[#050b18]/35"
+            style={{
+              animation: leaving ? undefined : "sheetDim 0.32s ease both",
+              opacity: leaving ? 0 : Math.max(0.08, 1 - dragY / 420),
+              transition: dragging ? "none" : "opacity 0.28s ease",
+            }}
+          />
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="yield-desk-title"
-            onClick={(e) => e.stopPropagation()}
-            className="flex h-[52dvh] w-full max-w-lg flex-col overflow-hidden rounded-t-[22px] border border-[var(--line)] bg-white shadow-[0_24px_64px_rgba(11,27,58,0.22)] sm:h-[min(52dvh,560px)] sm:rounded-[22px]"
+            className="absolute inset-x-0 bottom-0 top-0 flex flex-col overflow-hidden rounded-t-[22px] border border-[var(--line)] bg-white shadow-[0_-18px_48px_rgba(11,27,58,0.16)]"
+            style={{
+              transform: leaving
+                ? "translate3d(0, 104%, 0)"
+                : `translate3d(0, ${dragY}px, 0)`,
+              transition: dragging ? "none" : "transform 0.38s cubic-bezier(0.22, 1, 0.36, 1)",
+              animation: leaving || dragging || dragY ? undefined : "sheetUp 0.44s cubic-bezier(0.22, 1, 0.36, 1)",
+            }}
           >
-            <div className="flex items-center justify-between border-b border-[var(--line)] px-5 py-3.5">
-              <div>
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
-                  {t.yields.active}
-                </p>
-                <h3 id="yield-desk-title" className="font-display text-[1.2rem] text-ink">
-                  {open.name}
-                </h3>
+            <div
+              className="shrink-0 cursor-grab touch-none active:cursor-grabbing"
+              onPointerDown={onHandleDown}
+              onPointerMove={onHandleMove}
+              onPointerUp={onHandleUp}
+              onPointerCancel={onHandleUp}
+            >
+              <div className="flex justify-center pt-2.5 pb-1">
+                <span className="h-1.5 w-11 rounded-full bg-[var(--line)]" />
               </div>
-              <button
-                type="button"
-                onClick={closeAll}
-                className="rounded-full border border-[var(--line)] px-3 py-1 text-[13px] text-body"
-              >
-                {t.yields.close}
-              </button>
+              <div className="flex items-center justify-between border-b border-[var(--line)] px-5 pb-3.5">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">
+                    {t.yields.active}
+                  </p>
+                  <h3 id="yield-desk-title" className="font-display text-[1.2rem] text-ink">
+                    {open.name}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={dismiss}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  className="rounded-full border border-[var(--line)] px-3 py-1 text-[13px] text-body"
+                >
+                  {t.yields.close}
+                </button>
+              </div>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
