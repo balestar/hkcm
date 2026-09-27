@@ -25,10 +25,11 @@ export type YieldItem = {
   id: string;
   name: string;
   apy: string;
-  risk: "Low" | "Medium";
   lock: string;
   asset: YieldAsset;
   noteKey: "usdc" | "bond" | "eth";
+  chartId: string;
+  higherId?: string;
 };
 
 export const ACCOUNT = {
@@ -45,28 +46,30 @@ export const YIELDS: YieldItem[] = [
     id: "y1",
     name: "USDC Reserve",
     apy: "3.25%",
-    risk: "Low",
-    lock: "Flexible",
+    lock: "Daily",
     asset: "USDC",
     noteKey: "usdc",
+    chartId: "usdc",
+    higherId: "y2",
   },
   {
     id: "y2",
     name: "EU Bond Ladder",
     apy: "3.90%",
-    risk: "Low",
     lock: "6–18 mo",
     asset: "USDC",
     noteKey: "bond",
+    chartId: "bund",
+    higherId: "y3",
   },
   {
     id: "y3",
     name: "ETH Basket",
     apy: "8.7%",
-    risk: "Medium",
-    lock: "Flexible",
+    lock: "Daily",
     asset: "ETH",
     noteKey: "eth",
+    chartId: "eth",
   },
 ];
 
