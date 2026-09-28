@@ -354,15 +354,13 @@ export function defaultNote(inst: UniverseInstrument) {
   return `Hold ${inst.symbol} above the session mid — dips still look constructive while breadth holds.`;
 }
 
-export function analystFor(id: string, analystId?: string) {
+export function analystFor(_id: string, analystId?: string) {
   const named = analystId ? EXPERTS.find((e) => e.id === analystId) : null;
   if (named) {
     return { name: named.name, role: named.role, image: named.image };
   }
-  let h = 0;
-  for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0;
-  const e = EXPERTS[h % EXPERTS.length];
-  return { name: e.name, role: e.role, image: e.image };
+  const philip = EXPERTS.find((e) => e.id === "philip-k") ?? EXPERTS[0];
+  return { name: philip.name, role: philip.role, image: philip.image };
 }
 
 export function toPickItem(

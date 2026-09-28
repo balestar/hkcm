@@ -14,7 +14,7 @@ import {
   type HeadlineNews,
 } from "@/lib/landingContent";
 import { FALLBACK_NEWS } from "@/lib/newsTypes";
-import { LanguageSwitch, useLanguage } from "@/components/LanguageProvider";
+import { useLanguage } from "@/components/LanguageProvider";
 
 function AnalysisChart({
   values,
@@ -446,9 +446,6 @@ export function Landing() {
             {t.landing.about}
           </button>
         </nav>
-        <div className="absolute right-5 sm:right-10">
-          <LanguageSwitch variant="dark" />
-        </div>
       </header>
 
       <main className="relative z-10 mx-auto w-full max-w-5xl px-5 pb-20 pt-4 sm:px-10">

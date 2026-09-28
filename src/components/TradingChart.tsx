@@ -151,12 +151,15 @@ function sma(values: number[], period: number): (number | null)[] {
 
 type ChartTheme = "dark" | "light";
 
+type ChartSize = "full" | "mid";
+
 type TradingChartProps = {
   series: number[];
   price: string;
   up: boolean;
   symbol: string;
   theme?: ChartTheme;
+  size?: ChartSize;
 };
 
 const THEME = {
@@ -202,17 +205,25 @@ const THEME = {
   },
 } as const;
 
-export function TradingChart({ series, price, up, symbol, theme = "dark" }: TradingChartProps) {
+export function TradingChart({
+  series,
+  price,
+  up,
+  symbol,
+  theme = "dark",
+  size = "full",
+}: TradingChartProps) {
   const [tf, setTf] = useState<Tf>("1H");
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const skin = THEME[theme];
-  const fadeId = `chartFade-${theme}`;
-  const washId = `volFade-${theme}`;
+  const fadeId = `chartFade-${theme}-${size}`;
+  const washId = `volFade-${theme}-${size}`;
   const bullColor = theme === "light" ? "#0f9f6e" : BULL;
   const bearColor = theme === "light" ? "#e11d48" : BEAR;
   const maFast = theme === "light" ? "#3b6ef5" : "#7eb6ff";
   const maSlow = theme === "light" ? "#8a6d2f" : GOLD;
+  const mid = size === "mid";
 
   const candles = useMemo(
     () => buildCandles(series, price, tf, up),
@@ -224,15 +235,15 @@ export function TradingChart({ series, price, up, symbol, theme = "dark" }: Trad
   const ma21 = useMemo(() => sma(closes, 21), [closes]);
 
   const W = 760;
-  const H = 460;
+  const H = mid ? 292 : 460;
   const padL = 8;
   const padR = 58;
-  const padT = 8;
-  const volH = 78;
-  const gap = 8;
-  const chartBottom = H - 24;
+  const padT = mid ? 4 : 8;
+  const volH = mid ? 42 : 78;
+  const gap = mid ? 6 : 8;
+  const chartBottom = H - 22;
   const priceBottom = chartBottom - volH - gap;
-  const priceTop = padT + 22;
+  const priceTop = padT + (mid ? 16 : 22);
   const volTop = priceBottom + gap;
 
   const highs = candles.map((c) => c.h);
@@ -254,7 +265,7 @@ export function TradingChart({ series, price, up, symbol, theme = "dark" }: Trad
   const vyAt = (v: number) =>
     volTop + (1 - v / maxV) * (chartBottom - volTop - 2);
 
-  const priceTicks = 7;
+  const priceTicks = mid ? 5 : 7;
   const gridYs = Array.from({ length: priceTicks }, (_, i) => {
     const p = yMin + ((yMax - yMin) * i) / (priceTicks - 1);
     return { p, y: yAt(p) };

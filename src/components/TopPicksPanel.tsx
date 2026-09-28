@@ -389,13 +389,33 @@ function PickDetail({
         </div>
       </div>
 
-      <div className="mt-5">
-        <TradingChart
-          series={pick.series}
-          price={pick.price}
-          up={up}
-          symbol={pick.symbol}
-        />
+      <div className="mt-5 overflow-hidden rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_28px_rgba(0,0,0,0.22)]">
+        <div className="px-1 pb-1 pt-3">
+          <TradingChart
+            series={pick.series}
+            price={pick.price}
+            up={up}
+            symbol={pick.symbol}
+            theme="light"
+            size="mid"
+          />
+        </div>
+        <div className="flex gap-3 border-t border-[var(--line)] bg-[#f7f8fb] px-4 py-3.5">
+          <Image
+            src={pick.analyst.image}
+            alt={pick.analyst.name}
+            width={48}
+            height={48}
+            className="h-12 w-12 shrink-0 rounded-full object-cover object-top ring-1 ring-[rgba(11,27,58,0.08)]"
+          />
+          <div className="min-w-0">
+            <p className="text-[14px] font-semibold text-ink">{pick.analyst.name}</p>
+            <p className="text-[12px] text-muted">{pick.analyst.role}</p>
+            <p className="mt-1.5 text-[13.5px] leading-relaxed text-[#3d4f6a]">
+              “{pick.analyst.note}”
+            </p>
+          </div>
+        </div>
       </div>
 
       <div className="mt-6">
@@ -403,23 +423,6 @@ function PickDetail({
           {t.charts.why}
         </p>
         <p className="mt-2 text-[15px] leading-relaxed text-white/80">{pick.why}</p>
-      </div>
-
-      <div className="mt-5 flex gap-3 rounded-2xl border border-[rgba(196,163,90,0.12)] bg-black/25 p-4">
-        <Image
-          src={pick.analyst.image}
-          alt={pick.analyst.name}
-          width={48}
-          height={48}
-          className="h-12 w-12 rounded-full object-cover ring-1 ring-[rgba(196,163,90,0.25)]"
-        />
-        <div>
-          <p className="text-[14px] font-semibold text-white">{pick.analyst.name}</p>
-          <p className="text-[12px] text-white/40">{pick.analyst.role}</p>
-          <p className="mt-2 text-[14px] leading-relaxed text-white/65">
-            “{pick.analyst.note}”
-          </p>
-        </div>
       </div>
 
       <div className="mt-6">
