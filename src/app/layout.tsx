@@ -17,34 +17,42 @@ const syne = Syne({
   display: "swap",
 });
 
+const SHARE_TITLE = "HKCM · Struktur schlägt Stimmung";
+const SHARE_DESCRIPTION =
+  "Lies den Chart, nicht die Schlagzeile. Markt-Desk von Philip Hopf — HKCM GmbH, Stuttgart.";
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://charts-hkcm.de"),
   title: {
-    default: "HKCM Charts",
+    default: SHARE_TITLE,
     template: "%s · HKCM",
   },
-  description:
-    "Official HKCM charts desk — European market briefings, yields, and portfolio overview for HKCM clients. Operated by HKCM GmbH, Stuttgart.",
+  description: SHARE_DESCRIPTION,
   applicationName: "HKCM Charts",
   authors: [{ name: "HKCM GmbH", url: "https://hkcm.com" }],
   creator: "HKCM GmbH",
   publisher: "HKCM GmbH",
-  keywords: ["HKCM", "charts", "European markets", "investing", "Stuttgart"],
+  keywords: [
+    "HKCM",
+    "Charts",
+    "Finanzmärkte",
+    "Philip Hopf",
+    "Investieren",
+    "Stuttgart",
+  ],
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
     locale: "de_DE",
     url: "https://charts-hkcm.de",
     siteName: "HKCM Charts",
-    title: "HKCM Charts",
-    description:
-      "Official HKCM charts desk for clients — markets, yields, and desk notes. HKCM GmbH, Stuttgart.",
-    images: [{ url: "/logo-hkcm.png", width: 512, height: 128, alt: "HKCM" }],
+    title: SHARE_TITLE,
+    description: SHARE_DESCRIPTION,
   },
   twitter: {
-    card: "summary",
-    title: "HKCM Charts",
-    description: "Official HKCM charts desk — HKCM GmbH, Stuttgart.",
+    card: "summary_large_image",
+    title: SHARE_TITLE,
+    description: SHARE_DESCRIPTION,
   },
   icons: {
     icon: [

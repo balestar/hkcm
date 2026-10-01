@@ -64,7 +64,7 @@ export const YIELDS: YieldItem[] = [
   },
   {
     id: "y3",
-    name: "ETH Basket",
+    name: "Staked ETH Basket",
     apy: "8.7%",
     lock: "Daily",
     asset: "ETH",

@@ -68,7 +68,7 @@ const de = {
       bond:
         "EU Bond Ladder setzt USDC in eine gestaffelte Anleiheposition um. Erträge laufen über die Laufzeit auf.",
       eth:
-        "ETH Basket hält ETH. Tägliche Erträge werden zum Satz von 8,7 % p.a. angesammelt.",
+        "Staked ETH Basket hält gestaktes ETH. Tägliche Erträge werden zum Satz von 8,7 % p.a. angesammelt.",
     },
   },
   charts: {
@@ -198,7 +198,7 @@ const en: typeof de = {
       bond:
         "EU Bond Ladder deploys USDC into a staggered bond position. Yield accrues over the term.",
       eth:
-        "ETH Basket holds ETH. Daily yield accumulates at 8.7% p.a.",
+        "Staked ETH Basket holds staked ETH. Daily yield accumulates at 8.7% p.a.",
     },
   },
   account: {
