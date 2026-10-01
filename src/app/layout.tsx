@@ -53,6 +53,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: SHARE_TITLE,
     description: SHARE_DESCRIPTION,
+    images: ["/opengraph-image"],
   },
   icons: {
     icon: [

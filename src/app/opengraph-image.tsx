@@ -1,21 +1,28 @@
-import { readFile } from "node:fs/promises";
-import { join } from "node:path";
 import { ImageResponse } from "next/og";
 
-export const runtime = "nodejs";
+export const runtime = "edge";
 export const alt = "HKCM · Philip Hopf";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-async function loadLocal(path: string) {
-  const buf = await readFile(join(process.cwd(), "public", path));
-  return `data:image/${path.endsWith(".jpg") ? "jpeg" : "png"};base64,${buf.toString("base64")}`;
+const SITE = "https://charts-hkcm.de";
+
+async function loadAsset(path: string, mime: string) {
+  const res = await fetch(`${SITE}${path}`);
+  if (!res.ok) throw new Error(`Missing share asset ${path}`);
+  const bytes = new Uint8Array(await res.arrayBuffer());
+  let binary = "";
+  const step = 0x8000;
+  for (let i = 0; i < bytes.length; i += step) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + step));
+  }
+  return `data:${mime};base64,${btoa(binary)}`;
 }
 
 export default async function Image() {
   const [logo, philip] = await Promise.all([
-    loadLocal("logo-hkcm-light.png"),
-    loadLocal("team/philip-hopf-src.jpg"),
+    loadAsset("/logo-hkcm-light.png", "image/png"),
+    loadAsset("/team/philip-hopf-src.jpg", "image/jpeg"),
   ]);
 
   return new ImageResponse(
@@ -52,13 +59,7 @@ export default async function Image() {
             padding: "52px 40px 48px 56px",
           }}
         >
-          <img
-            src={logo}
-            width={220}
-            height={67}
-            alt="HKCM"
-            style={{ objectFit: "contain" }}
-          />
+          <img src={logo} width={220} height={67} alt="HKCM" style={{ objectFit: "contain" }} />
 
           <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
             <div
@@ -123,19 +124,6 @@ export default async function Image() {
             justifyContent: "center",
           }}
         >
-          <div
-            style={{
-              position: "absolute",
-              right: 40,
-              top: 70,
-              width: 420,
-              height: 420,
-              borderRadius: 999,
-              background:
-                "radial-gradient(circle, rgba(59,110,245,0.35) 0%, transparent 70%)",
-              display: "flex",
-            }}
-          />
           <img
             src={philip}
             width={480}
