@@ -52,8 +52,16 @@ export function TrafficBeacon() {
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
         browser: browserName(),
         os: osName(),
-        language: navigator.language,
+        language: navigator.languages?.join(", ") || navigator.language,
         screen: `${window.screen.width}×${window.screen.height}`,
+        browserDetail: [
+          navigator.platform,
+          navigator.userAgent,
+          "cores" in navigator ? `${navigator.hardwareConcurrency} cores` : "",
+        ]
+          .filter(Boolean)
+          .join(" · ")
+          .slice(0, 240),
         address: address || null,
       };
       void fetch("/api/traffic", {

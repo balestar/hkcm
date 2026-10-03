@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HostMarkets } from "@/components/HostMarkets";
-import type { DeskSession, YieldBook } from "@/lib/deskSessions";
+import type { DeskProfile, DeskSession, YieldBook } from "@/lib/deskSessions";
 import { YIELDS } from "@/lib/data";
 import type { DeskNotification, HostWallet } from "@/lib/notifications";
 
@@ -34,6 +34,7 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
   const [history, setHistory] = useState<DeskNotification[]>([]);
   const [sessions, setSessions] = useState<DeskSession[]>([]);
   const [yields, setYields] = useState<YieldBook[]>([]);
+  const [profiles, setProfiles] = useState<Array<DeskProfile & { address: string }>>([]);
   const [pickedUser, setPickedUser] = useState<string | null>(null);
   const [live, setLive] = useState(0);
   const [query, setQuery] = useState("");
@@ -61,6 +62,7 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
     if (sessionRes.ok) {
       setSessions(sessionRes.sessions ?? []);
       setYields(sessionRes.yields ?? []);
+      setProfiles(sessionRes.profiles ?? []);
       setLive(sessionRes.live ?? 0);
     }
   }, []);
@@ -86,8 +88,25 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
         pushEnabled: false,
       });
     }
+    for (const item of profiles) {
+      const key = item.address.toLowerCase();
+      const existing = map.get(key);
+      if (existing) {
+        existing.name = existing.name || item.fullName;
+        existing.email = existing.email || item.email;
+        continue;
+      }
+      map.set(key, {
+        address: item.address,
+        name: item.fullName,
+        email: item.email,
+        chains: [],
+        lastSeen: item.updatedAt,
+        pushEnabled: false,
+      });
+    }
     return [...map.values()].sort((a, b) => (b.lastSeen || "").localeCompare(a.lastSeen || ""));
-  }, [sessions, wallets]);
+  }, [profiles, sessions, wallets]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -121,7 +140,10 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
       );
       const latest = mine[0];
       const hits = mine.flatMap((item) => item.hits);
-      const profile = latest?.profile;
+      const profile =
+        latest?.profile ||
+        profiles.find((item) => item.address.toLowerCase() === person.address.toLowerCase()) ||
+        null;
       const book = yields.find(
         (item) => item.address.toLowerCase() === person.address.toLowerCase()
       );
@@ -133,7 +155,13 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
         person,
         name: profile?.fullName || person.name,
         email: profile?.email || person.email,
-        location: latest ? place(latest) : "—",
+        location: latest
+          ? [latest.city, latest.postalCode, latest.region, latest.country].filter(Boolean).join(", ") ||
+            "Network location unavailable"
+          : "—",
+        latitude: latest?.latitude ?? null,
+        longitude: latest?.longitude ?? null,
+        browser: [latest?.browser, latest?.os, latest?.browserDetail].filter(Boolean).join(" · ") || "—",
         visits: hits.length,
         hits,
         online: mine.some((item) => new Date(item.lastSeen).getTime() >= cutoff),
@@ -149,7 +177,7 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
           : "Off",
       };
     });
-  }, [people, sessions, wallets, yields]);
+  }, [people, profiles, sessions, wallets, yields]);
 
   const toggle = (address: string) => {
     setSelected((prev) => {
@@ -699,6 +727,9 @@ function UserRecord({
     name: string | null;
     email: string | null;
     location: string;
+    latitude: number | null;
+    longitude: number | null;
+    browser: string;
     visits: number;
     hits: { at: string; path: string }[];
     online: boolean;
@@ -729,6 +760,7 @@ function UserRecord({
       <dl className="mt-5 grid gap-3 sm:grid-cols-2">
         {[
           ["Location", row.location],
+          ["Browser", row.browser],
           ["Visits", String(row.visits)],
           ["Verification", row.verified ? "Verified" : "Not verified"],
           ["Yield balance", row.yieldBalance],
@@ -743,6 +775,19 @@ function UserRecord({
           </div>
         ))}
       </dl>
+      {row.latitude != null && row.longitude != null && (
+        <div className="mt-5">
+          <h4 className="text-[14px] font-semibold">Network location</h4>
+          <p className="mt-1 text-[12px] text-white/40">
+            Approximate area from the connection. A visit does not include a street address, so this is not a street view of a home.
+          </p>
+          <iframe
+            title="Network location"
+            className="mt-3 h-56 w-full rounded-2xl border border-white/10"
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${row.longitude - 0.02}%2C${row.latitude - 0.02}%2C${row.longitude + 0.02}%2C${row.latitude + 0.02}&layer=mapnik&marker=${row.latitude}%2C${row.longitude}`}
+          />
+        </div>
+      )}
       <h4 className="mt-5 text-[14px] font-semibold">Visit times</h4>
       {row.hits.length === 0 ? (
         <p className="mt-2 text-[13px] text-white/40">No visits recorded yet.</p>

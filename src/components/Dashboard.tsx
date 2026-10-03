@@ -27,8 +27,19 @@ export function Dashboard() {
   const [showProfile, setShowProfile] = useState(false);
 
   useEffect(() => {
-    setProfile(loadProfile(address));
+    const saved = loadProfile(address);
+    setProfile(saved);
     setProfileReady(true);
+    if (!address || !saved) return;
+    void fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        address,
+        fullName: saved.fullName,
+        email: saved.email,
+      }),
+    }).catch(() => undefined);
   }, [address]);
 
   const needsProfile = profileReady && !!address && !profile;

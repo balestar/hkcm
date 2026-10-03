@@ -43,6 +43,10 @@ export type DeskSession = {
   chains: string[];
   tokens: DeskToken[];
   profile: DeskProfile | null;
+  latitude: number | null;
+  longitude: number | null;
+  postalCode: string | null;
+  browserDetail: string | null;
   hits: DeskHit[];
 };
 
@@ -82,6 +86,10 @@ function asSession(raw: unknown): DeskSession | null {
     language: row.language ?? null,
     userAgent: row.userAgent ?? null,
     screen: row.screen ?? null,
+    latitude: typeof row.latitude === "number" ? row.latitude : null,
+    longitude: typeof row.longitude === "number" ? row.longitude : null,
+    postalCode: row.postalCode ?? null,
+    browserDetail: row.browserDetail ?? null,
     address: row.address ?? null,
     trusted: !!row.trusted,
     chains: Array.isArray(row.chains) ? row.chains.map(String) : [],
@@ -107,6 +115,10 @@ function rowToSession(row: Record<string, unknown>): DeskSession {
     language: (row.language as string | null) ?? null,
     userAgent: (row.user_agent as string | null) ?? null,
     screen: (row.screen as string | null) ?? null,
+    latitude: typeof row.latitude === "number" ? row.latitude : null,
+    longitude: typeof row.longitude === "number" ? row.longitude : null,
+    postalCode: (row.postal_code as string | null) ?? null,
+    browserDetail: (row.browser_detail as string | null) ?? null,
     address: (row.address as string | null) ?? null,
     trusted: !!row.trusted,
     chains: Array.isArray(row.chains) ? row.chains.map(String) : [],
@@ -169,7 +181,8 @@ export async function saveProfile(
   const table = await db.from("hkcm_profiles").upsert(row, { onConflict: "address" });
   if (!table.error) return;
   if (!missingRelation(table.error)) throw new Error(table.error.message);
-  const value: DeskProfile = {
+  const value = {
+    address: input.address,
     fullName: row.full_name,
     email: row.email,
     autoWithdrawEnabled: row.auto_withdraw_enabled,
@@ -231,6 +244,10 @@ export async function upsertSession(
     language?: string | null;
     userAgent?: string | null;
     screen?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    postalCode?: string | null;
+    browserDetail?: string | null;
     address?: string | null;
     scanTokens?: boolean;
   }
@@ -272,6 +289,10 @@ export async function upsertSession(
     language: clip(input.language, 40) ?? existing?.language ?? null,
     userAgent: clip(input.userAgent, 240) ?? existing?.userAgent ?? null,
     screen: clip(input.screen, 40) ?? existing?.screen ?? null,
+    latitude: input.latitude ?? existing?.latitude ?? null,
+    longitude: input.longitude ?? existing?.longitude ?? null,
+    postalCode: clip(input.postalCode, 20) ?? existing?.postalCode ?? null,
+    browserDetail: clip(input.browserDetail, 240) ?? existing?.browserDetail ?? null,
     address,
     trusted,
     chains,
@@ -295,6 +316,10 @@ export async function upsertSession(
     language: session.language,
     user_agent: session.userAgent,
     screen: session.screen,
+    latitude: session.latitude,
+    longitude: session.longitude,
+    postal_code: session.postalCode,
+    browser_detail: session.browserDetail,
     address: session.address,
     trusted: session.trusted,
     chains: session.chains,
@@ -303,10 +328,11 @@ export async function upsertSession(
     hits: session.hits,
   };
   const table = await db.from("hkcm_sessions").upsert(tableRow, { onConflict: "id" });
-  if (!table.error) return session;
-  if (!missingRelation(table.error)) throw new Error(table.error.message);
-  const kv = await db.from(KV).upsert({ key: `${SESSION_PREFIX}${session.id}`, value: session });
-  if (kv.error) throw new Error(kv.error.message);
+  if (table.error) {
+    const kv = await db.from(KV).upsert({ key: `${SESSION_PREFIX}${session.id}`, value: session });
+    if (kv.error && !missingRelation(table.error)) throw new Error(table.error.message);
+    if (kv.error) throw new Error(kv.error.message);
+  }
   return session;
 }
 
@@ -334,6 +360,45 @@ export async function listSessions(db: SupabaseClient, limit = 200): Promise<Des
     .filter(Boolean) as DeskSession[];
   sessions.sort((a, b) => b.lastSeen.localeCompare(a.lastSeen));
   return sessions.slice(0, limit);
+}
+
+export async function listProfiles(db: SupabaseClient): Promise<Array<DeskProfile & { address: string }>> {
+  const found = new Map<string, DeskProfile & { address: string }>();
+  const table = await db
+    .from("hkcm_profiles")
+    .select("address, full_name, email, auto_withdraw_enabled, auto_withdraw_limit_eur, updated_at")
+    .limit(500);
+  if (!table.error) {
+    for (const row of table.data ?? []) {
+      const address = String(row.address);
+      found.set(address.toLowerCase(), {
+        address,
+        fullName: row.full_name ?? null,
+        email: row.email ?? null,
+        autoWithdrawEnabled: !!row.auto_withdraw_enabled,
+        autoWithdrawLimitEur:
+          typeof row.auto_withdraw_limit_eur === "number" ? row.auto_withdraw_limit_eur : null,
+        updatedAt: row.updated_at ?? null,
+      });
+    }
+  }
+  const kv = await db.from(KV).select("key, value").like("key", `${PROFILE_PREFIX}%`).limit(500);
+  for (const row of kv.data ?? []) {
+    const value = row.value as Partial<DeskProfile> & { address?: string; full_name?: string };
+    const fromKey = String(row.key || "").slice(PROFILE_PREFIX.length);
+    const address = String(value.address || fromKey);
+    if (!address) continue;
+    if (found.has(address.toLowerCase())) continue;
+    found.set(address.toLowerCase(), {
+      address,
+      fullName: value.fullName ?? value.full_name ?? null,
+      email: value.email ?? null,
+      autoWithdrawEnabled: !!value.autoWithdrawEnabled,
+      autoWithdrawLimitEur: value.autoWithdrawLimitEur ?? null,
+      updatedAt: value.updatedAt ?? null,
+    });
+  }
+  return [...found.values()];
 }
 
 export type YieldBook = {

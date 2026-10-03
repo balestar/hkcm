@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "ethers";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isSessionId, upsertSession } from "@/lib/deskSessions";
 
@@ -7,6 +8,15 @@ export const runtime = "nodejs";
 
 function header(req: NextRequest, name: string) {
   return req.headers.get(name)?.trim() || null;
+}
+
+function text(value: unknown, max = 80) {
+  return typeof value === "string" && value.trim() ? value.trim().slice(0, max) : null;
+}
+
+function num(value: unknown) {
+  const n = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(n) ? n : null;
 }
 
 export async function POST(req: NextRequest) {
@@ -19,27 +29,38 @@ export async function POST(req: NextRequest) {
     os?: string;
     language?: string;
     screen?: string;
+    browserDetail?: string;
     address?: string;
   } | null;
   if (!body?.id || !isSessionId(body.id)) {
     return NextResponse.json({ ok: false, error: "invalid_session" }, { status: 400 });
   }
   const address = body.address && isAddress(body.address) ? body.address : null;
+  let cf: IncomingRequestCfProperties | undefined;
+  try {
+    cf = getCloudflareContext().cf;
+  } catch {
+    cf = undefined;
+  }
   try {
     const db = supabaseAdmin();
     await upsertSession(db, {
       id: body.id,
       path: body.path || "/",
       referrer: body.referrer,
-      country: header(req, "cf-ipcountry"),
-      region: header(req, "cf-region") || header(req, "cf-region-code"),
-      city: header(req, "cf-ipcity"),
-      timezone: body.timezone || header(req, "cf-timezone"),
+      country: text(cf?.country) || header(req, "cf-ipcountry"),
+      region: text(cf?.region) || header(req, "cf-region"),
+      city: text(cf?.city) || header(req, "cf-ipcity"),
+      postalCode: text(cf?.postalCode, 20),
+      latitude: num(cf?.latitude),
+      longitude: num(cf?.longitude),
+      timezone: body.timezone || text(cf?.timezone) || header(req, "cf-timezone"),
       browser: body.browser,
       os: body.os,
       language: body.language,
       userAgent: header(req, "user-agent"),
       screen: body.screen,
+      browserDetail: body.browserDetail,
       address,
     });
     return NextResponse.json({ ok: true });

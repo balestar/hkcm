@@ -79,6 +79,11 @@ export function CreateProfileModal({
       createdAt: new Date().toISOString(),
     };
     saveProfile(address, profile);
+    void fetch("/api/profile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, fullName: profile.fullName, email: profile.email }),
+    }).catch(() => undefined);
     onCreated(profile);
     setSaving(false);
   };
