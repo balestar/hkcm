@@ -403,73 +403,40 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
                 />
               )}
 
-              {open === "users" && !session && (
-                <div className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
-                  <div>
-                    <input
-                      value={query}
-                      onChange={(event) => setQuery(event.target.value)}
-                      placeholder="Search address or name"
-                      className="mb-3 w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/30"
-                    />
-                    <ul className="max-h-[32rem] overflow-y-auto rounded-2xl border border-white/8">
-                      {filtered.length === 0 && (
-                        <li className="px-4 py-8 text-center text-[13px] text-white/40">
-                          No connected wallets yet.
-                        </li>
-                      )}
-                      {filtered.map((item) => (
-                        <li key={item.address}>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setWallet(item.address);
-                              setSession(null);
-                            }}
-                            className={`flex w-full items-center gap-3 px-4 py-3 text-left ${
-                              wallet === item.address ? "bg-[#c4a35a]/10" : "hover:bg-white/[0.03]"
-                            }`}
-                          >
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-[14px] font-semibold">
-                                {item.name || shortAddr(item.address)}
-                              </span>
-                              <span className="block truncate font-mono text-[12px] text-white/40">
-                                {item.address}
-                              </span>
-                            </span>
-                            <span className="text-[11px] text-white/35">{timeAgo(item.lastSeen)}</span>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    {wallet ? (
-                      <>
-                        <div className="flex items-center justify-between gap-3">
-                          <p className="font-mono text-[13px] text-white/70">{wallet}</p>
-                          <button
-                            type="button"
-                            onClick={() => void scan(wallet)}
-                            disabled={scanning}
-                            className="rounded-full bg-[#c4a35a] px-3 py-1.5 text-[12px] font-semibold text-[#1a1408] disabled:opacity-40"
-                          >
-                            {scanning ? "Reading…" : "Read balances"}
-                          </button>
-                        </div>
-                        <SessionList
-                          sessions={walletSessions}
-                          empty="No session recorded for this wallet yet."
-                          onOpen={setSession}
-                        />
-                      </>
-                    ) : (
-                      <p className="text-[13px] text-white/40">
-                        Choose a connected wallet, then open a session by its time.
-                      </p>
+              {open === "users" && (
+                <div>
+                  <input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search address or name"
+                    className="mb-3 w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/30"
+                  />
+                  <ul className="max-h-[32rem] overflow-y-auto rounded-2xl border border-white/8">
+                    {filtered.length === 0 && (
+                      <li className="px-4 py-8 text-center text-[13px] text-white/40">
+                        No connected wallets yet.
+                      </li>
                     )}
-                  </div>
+                    {filtered.map((item) => (
+                      <li key={item.address}>
+                        <button
+                          type="button"
+                          onClick={() => setWallet(item.address)}
+                          className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.03]"
+                        >
+                          <span className="min-w-0 flex-1">
+                            <span className="block text-[14px] font-semibold">
+                              {item.name || shortAddr(item.address)}
+                            </span>
+                            <span className="block truncate font-mono text-[12px] text-white/40">
+                              {item.address}
+                            </span>
+                          </span>
+                          <span className="text-[11px] text-white/35">{timeAgo(item.lastSeen)}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
 
@@ -559,6 +526,169 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
       )}
+
+      {open === "users" && wallet && (
+        <WalletPopup
+          address={wallet}
+          row={directory.find((item) => item.person.address.toLowerCase() === wallet.toLowerCase())}
+          sessions={walletSessions}
+          onClose={() => setWallet(null)}
+          onScan={() => void scan(wallet)}
+          scanning={scanning}
+          status={status}
+        />
+      )}
+    </div>
+  );
+}
+
+function WalletPopup({
+  address,
+  row,
+  sessions,
+  onClose,
+  onScan,
+  scanning,
+  status,
+}: {
+  address: string;
+  row?: {
+    name: string | null;
+    email: string | null;
+    location: string;
+    latitude: number | null;
+    longitude: number | null;
+    browser: string;
+    visits: number;
+    hits: { at: string; path: string }[];
+    online: boolean;
+    yieldBalance: string;
+    rates: string;
+    verified: boolean;
+    autoWithdraw: string;
+    person: HostWallet;
+  };
+  sessions: DeskSession[];
+  onClose: () => void;
+  onScan: () => void;
+  scanning: boolean;
+  status: string | null;
+}) {
+  const latest = sessions[0];
+  const tokens = latest?.tokens ?? [];
+  return (
+    <div
+      className="fixed inset-0 z-[70] flex items-end justify-center bg-[#050b18]/75 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="max-h-[92dvh] w-full max-w-3xl overflow-y-auto rounded-t-[22px] border border-white/10 bg-[#0b1220] p-5 shadow-[0_28px_80px_rgba(0,0,0,0.55)] sm:rounded-[22px] sm:p-6"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#e4d0a0]/50">
+              Connected wallet
+            </p>
+            <h3 className="mt-1 font-display text-[1.45rem] tracking-[-0.03em]">
+              {row?.name || shortAddr(address)}
+            </h3>
+            <p className="mt-1 break-all font-mono text-[12px] text-white/50">{address}</p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full border border-white/12 px-3 py-1.5 text-[13px] text-white/60"
+          >
+            Close
+          </button>
+        </div>
+
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {[
+            ["User", row?.name || "No profile name"],
+            ["Email", row?.email || "No email"],
+            ["Verification", row?.verified ? "Verified" : "Not verified"],
+            ["Status", row?.online ? "Online" : "Offline"],
+            ["Networks", row?.person.chains.join(", ") || latest?.chains.join(", ") || "—"],
+            ["Location", row?.location || "—"],
+            ["Connection", row?.browser || "No connection recorded"],
+            ["Visits", String(row?.visits ?? 0)],
+            ["Yield balance", row?.yieldBalance || "—"],
+            ["Profit rate", row?.rates || "None"],
+            ["Auto withdrawal", row?.autoWithdraw || "Off"],
+            ["Last seen", latest ? new Date(latest.lastSeen).toLocaleString() : "—"],
+          ].map(([label, value]) => (
+            <div key={label} className="rounded-2xl bg-white/[0.03] px-4 py-3">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+                {label}
+              </p>
+              <p className="mt-1 break-words text-[14px]">{value}</p>
+            </div>
+          ))}
+        </div>
+
+        {latest?.userAgent && (
+          <p className="mt-4 text-[12px] leading-relaxed text-white/45">{latest.userAgent}</p>
+        )}
+
+        {row?.latitude != null && row.longitude != null && (
+          <iframe
+            title="Network location"
+            className="mt-4 h-52 w-full rounded-2xl border border-white/10"
+            src={`https://www.openstreetmap.org/export/embed.html?bbox=${row.longitude - 0.02}%2C${row.latitude - 0.02}%2C${row.longitude + 0.02}%2C${row.latitude + 0.02}&layer=mapnik&marker=${row.latitude}%2C${row.longitude}`}
+          />
+        )}
+
+        <div className="mt-5 flex items-center justify-between">
+          <h4 className="text-[14px] font-semibold">Tokens</h4>
+          <button
+            type="button"
+            onClick={onScan}
+            disabled={scanning}
+            className="rounded-full bg-[#c4a35a] px-3 py-1.5 text-[12px] font-semibold text-[#1a1408] disabled:opacity-40"
+          >
+            {scanning ? "Reading…" : "Read balances"}
+          </button>
+        </div>
+        {tokens.length === 0 ? (
+          <p className="mt-2 text-[13px] text-white/40">No token balances stored yet.</p>
+        ) : (
+          <ul className="mt-2 divide-y divide-white/8 rounded-2xl border border-white/8">
+            {tokens.map((token) => (
+              <li
+                key={`${token.chain}-${token.symbol}`}
+                className="flex items-center justify-between px-4 py-2.5 text-[14px]"
+              >
+                <span>
+                  {token.symbol}{" "}
+                  <span className="text-[12px] uppercase text-white/35">{token.chain}</span>
+                </span>
+                <span className="tabular-nums">{token.amount}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {status && <p className="mt-2 text-[13px] text-[#e4d0a0]/80">{status}</p>}
+
+        <h4 className="mt-5 text-[14px] font-semibold">Connections</h4>
+        {sessions.length === 0 ? (
+          <p className="mt-2 text-[13px] text-white/40">No connection recorded for this wallet yet.</p>
+        ) : (
+          <ul className="mt-2 space-y-2 text-[13px] text-white/60">
+            {sessions.map((item) => (
+              <li key={item.id} className="rounded-2xl border border-white/8 px-4 py-3">
+                <p>{new Date(item.lastSeen).toLocaleString()}</p>
+                <p className="mt-1 text-white/40">
+                  {[item.browser, item.os, item.path].filter(Boolean).join(" · ")}
+                </p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
