@@ -36,9 +36,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: false, error: "invalid_session" }, { status: 400 });
   }
   const address = body.address && isAddress(body.address) ? body.address : null;
-  let cf: IncomingRequestCfProperties | undefined;
+  type CfGeo = {
+    country?: unknown;
+    region?: unknown;
+    city?: unknown;
+    postalCode?: unknown;
+    latitude?: unknown;
+    longitude?: unknown;
+    timezone?: unknown;
+  };
+  let cf: CfGeo | undefined;
   try {
-    cf = getCloudflareContext().cf;
+    cf = getCloudflareContext().cf as CfGeo | undefined;
   } catch {
     cf = undefined;
   }
