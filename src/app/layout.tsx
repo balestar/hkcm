@@ -48,12 +48,20 @@ export const metadata: Metadata = {
     siteName: "HKCM Charts",
     title: SHARE_TITLE,
     description: SHARE_DESCRIPTION,
+    images: [
+      {
+        url: "/og.png",
+        width: 1200,
+        height: 630,
+        alt: "HKCM Charts",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: SHARE_TITLE,
     description: SHARE_DESCRIPTION,
-    images: ["/opengraph-image"],
+    images: ["/og.png"],
   },
   icons: {
     icon: [
