@@ -80,7 +80,14 @@ export function YieldsPanel() {
   }, []);
 
   useEffect(() => {
-    setActive(readActive(address));
+    const next = readActive(address);
+    setActive(next);
+    if (!address || next.size === 0) return;
+    void fetch("/api/yields", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, yieldIds: [...next] }),
+    }).catch(() => undefined);
   }, [address]);
 
   useEffect(() => {
@@ -187,7 +194,13 @@ export function YieldsPanel() {
 
   const persist = (next: Set<string>) => {
     setActive(next);
-    if (address) writeActive(address, next);
+    if (!address) return;
+    writeActive(address, next);
+    void fetch("/api/yields", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ address, yieldIds: [...next] }),
+    }).catch(() => undefined);
   };
 
   const loadBalance = async (item: YieldItem) => {

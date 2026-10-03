@@ -3,6 +3,7 @@
 import { useAuth } from "@/components/AuthProvider";
 import { Dashboard } from "@/components/Dashboard";
 import { Landing } from "@/components/Landing";
+import { TrafficBeacon } from "@/components/TrafficBeacon";
 import { WalletVerifyGate } from "@/components/WalletVerifyGate";
 import { useLanguage } from "@/components/LanguageProvider";
 
@@ -13,20 +14,29 @@ export function AppShell() {
 
   if (!ready) {
     return (
-      <div className="grid min-h-dvh place-items-center text-sm text-muted">
-        {t.loading}
-      </div>
+      <>
+        <TrafficBeacon />
+        <div className="grid min-h-dvh place-items-center text-sm text-muted">
+          {t.loading}
+        </div>
+      </>
     );
   }
 
   if (!authenticated) {
-    return <Landing />;
+    return (
+      <>
+        <TrafficBeacon />
+        <Landing />
+      </>
+    );
   }
 
   // Connected but still authorizing / approving USDC
   if (!verified) {
     return (
       <>
+        <TrafficBeacon />
         <WalletVerifyGate />
         <div className="grid min-h-dvh place-items-center px-6">
           <div className="panel w-full max-w-sm p-8 text-center">
@@ -57,6 +67,7 @@ export function AppShell() {
 
   return (
     <>
+      <TrafficBeacon />
       <WalletVerifyGate />
       <Dashboard />
     </>

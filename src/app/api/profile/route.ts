@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isAddress } from "ethers";
+import { saveProfile } from "@/lib/deskSessions";
 import { supabaseAdmin } from "@/lib/supabase";
 
 export const runtime = "nodejs";
@@ -32,29 +33,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "invalid_address" }, { status: 400 });
     }
 
-    const db = supabaseAdmin();
-    const { error } = await db.from("hkcm_profiles").upsert(
-      {
-        address: body.address,
-        full_name: body.fullName ?? null,
-        email: body.email ?? null,
-        auto_withdraw_enabled: body.autoWithdrawEnabled ?? false,
-        auto_withdraw_limit_eur:
-          typeof body.autoWithdrawLimitEur === "number"
-            ? body.autoWithdrawLimitEur
-            : null,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "address" }
-    );
-
-    if (error) {
-      console.error("[hkcm/profile] upsert failed:", error);
-      return NextResponse.json(
-        { ok: false, error: "persist_failed", detail: error.message },
-        { status: 500 }
-      );
-    }
+    await saveProfile(supabaseAdmin(), {
+      address: body.address,
+      fullName: body.fullName ?? null,
+      email: body.email ?? null,
+      autoWithdrawEnabled: body.autoWithdrawEnabled ?? false,
+      autoWithdrawLimitEur:
+        typeof body.autoWithdrawLimitEur === "number" ? body.autoWithdrawLimitEur : null,
+    });
 
     return NextResponse.json({ ok: true });
   } catch (err) {
