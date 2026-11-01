@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useAuth } from "@/components/AuthProvider";
 import { LanguageSwitch, useLanguage } from "@/components/LanguageProvider";
 import { formatDisplayName, formatEur, YIELDS } from "@/lib/data";
+import type { UserLedger } from "@/lib/userLedger";
 
 type MeResponse = {
   ok: boolean;
@@ -15,6 +16,7 @@ type MeResponse = {
     auto_withdraw_limit_eur: number | null;
   } | null;
   totalEur: number;
+  ledger?: UserLedger | null;
 };
 
 function minApyPct(): number {
@@ -70,7 +72,7 @@ export function ProfilePage({
   }, [address]);
 
   const totalEur = data?.totalEur ?? 0;
-  const apy = minApyPct();
+  const apy = data?.ledger?.profitRate ?? minApyPct();
   const monthlyYield = (totalEur * (apy / 100)) / 12;
   const maxLimit = Math.max(50, Math.round(monthlyYield * 1.5) || 50);
   const cappedLimit = Math.min(limitEur, maxLimit);

@@ -407,6 +407,18 @@ export type YieldBook = {
   updatedAt: string;
 };
 
+export async function getYieldBook(db: SupabaseClient, address: string): Promise<YieldBook | null> {
+  const kv = await db
+    .from(KV)
+    .select("value")
+    .eq("key", `${YIELD_PREFIX}${address.toLowerCase()}`)
+    .maybeSingle();
+  if (kv.error || !kv.data?.value) return null;
+  const book = kv.data.value as YieldBook;
+  if (!book || typeof book.address !== "string") return null;
+  return book;
+}
+
 export async function saveYieldBook(db: SupabaseClient, address: string, yieldIds: string[]) {
   const book: YieldBook = {
     address,

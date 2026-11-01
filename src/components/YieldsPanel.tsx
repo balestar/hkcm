@@ -2,14 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react";
 import { createPortal } from "react-dom";
-import { YIELDS, type YieldItem } from "@/lib/data";
+import { formatEur, YIELDS, type YieldItem } from "@/lib/data";
 import { instrumentById } from "@/lib/marketUniverse";
 import { TradingChart } from "@/components/TradingChart";
 import { useAuth } from "@/components/AuthProvider";
 import { useLanguage } from "@/components/LanguageProvider";
+import { formatApy, profitRateFor, type UserLedger } from "@/lib/userLedger";
 
 type MeHolding = {
   tokens: { symbol: string; amount: number }[];
+};
+
+type MeResponse = {
+  ok?: boolean;
+  holdings?: MeHolding[];
+  ledger?: UserLedger | null;
 };
 
 type ChartSnap = { price: string; changePct: number; series: number[] };
@@ -56,6 +63,18 @@ function apyNumber(apy: string) {
   return Number.parseFloat(apy.replace(",", ".")) || 0;
 }
 
+function displayApy(item: YieldItem, ledger: UserLedger | null) {
+  const rate = profitRateFor(ledger, item.id);
+  return rate != null ? formatApy(rate) : item.apy;
+}
+
+function ledgerYieldAmount(item: YieldItem, ledger: UserLedger | null) {
+  if (!ledger || ledger.yieldBalance == null) return null;
+  if (ledger.yieldId && ledger.yieldId !== item.id) return null;
+  if (ledger.yieldAsset && ledger.yieldAsset !== item.asset) return null;
+  return ledger.yieldBalance;
+}
+
 export function YieldsPanel() {
   const { t } = useLanguage();
   const { address } = useAuth();
@@ -65,6 +84,7 @@ export function YieldsPanel() {
   const [message, setMessage] = useState<string | null>(null);
   const [ok, setOk] = useState(false);
   const [active, setActive] = useState<Set<string>>(new Set());
+  const [ledger, setLedger] = useState<UserLedger | null>(null);
   const [balance, setBalance] = useState(0);
   const [chart, setChart] = useState<ChartSnap | null>(null);
   const [leaving, setLeaving] = useState(false);
@@ -80,14 +100,32 @@ export function YieldsPanel() {
   }, []);
 
   useEffect(() => {
-    const next = readActive(address);
-    setActive(next);
-    if (!address || next.size === 0) return;
-    void fetch("/api/yields", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ address, yieldIds: [...next] }),
-    }).catch(() => undefined);
+    const local = readActive(address);
+    setActive(local);
+    setLedger(null);
+    if (!address) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const [meRes, yieldRes] = await Promise.all([
+          fetch(`/api/me?address=${encodeURIComponent(address)}`),
+          fetch(`/api/yields?address=${encodeURIComponent(address)}`),
+        ]);
+        const me = (await meRes.json()) as MeResponse;
+        const book = (await yieldRes.json()) as { ok?: boolean; yieldIds?: string[] };
+        if (cancelled) return;
+        if (me.ok) setLedger(me.ledger ?? null);
+        const serverIds = Array.isArray(book.yieldIds) ? book.yieldIds : [];
+        const next = new Set([...local, ...serverIds]);
+        setActive(next);
+        if (next.size > 0) writeActive(address, next);
+      } catch {
+        /* keep local */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [address]);
 
   useEffect(() => {
@@ -141,7 +179,8 @@ export function YieldsPanel() {
     [open]
   );
 
-  const daily = balance * (apyNumber(open?.apy ?? "0") / 100) / 365;
+  const openApy = open ? displayApy(open, ledger) : "0";
+  const daily = balance * (apyNumber(openApy) / 100) / 365;
 
   const closeAll = () => {
     setOpen(null);
@@ -206,9 +245,11 @@ export function YieldsPanel() {
   const loadBalance = async (item: YieldItem) => {
     if (!address) return 0;
     const res = await fetch(`/api/me?address=${encodeURIComponent(address)}`);
-    const json = (await res.json()) as { ok?: boolean; holdings?: MeHolding[] };
+    const json = (await res.json()) as MeResponse;
     if (!json.ok) throw new Error("check");
-    const bal = tokenBalance(json.holdings ?? [], item.asset);
+    if (json.ledger) setLedger(json.ledger);
+    const override = ledgerYieldAmount(item, json.ledger ?? null);
+    const bal = override ?? tokenBalance(json.holdings ?? [], item.asset);
     setBalance(bal);
     return bal;
   };
@@ -311,7 +352,9 @@ export function YieldsPanel() {
                   </span>
                   <span className="mt-0.5 block text-[13px] text-body">{y.lock}</span>
                 </span>
-                <span className="text-[15px] font-semibold tabular-nums text-gain">{y.apy}</span>
+                <span className="text-[15px] font-semibold tabular-nums text-gain">
+                  {displayApy(y, ledger)}
+                </span>
                 <span className="text-[16px] text-muted/70" aria-hidden>
                   ›
                 </span>
@@ -347,7 +390,7 @@ export function YieldsPanel() {
                 </h3>
                 <p className="mt-1 text-[13px] text-body">{open.lock}</p>
               </div>
-              <p className="text-[1.15rem] font-semibold tabular-nums text-gain">{open.apy}</p>
+              <p className="text-[1.15rem] font-semibold tabular-nums text-gain">{openApy}</p>
             </div>
             <p className="mt-4 text-[14px] leading-relaxed text-body">
               {t.yields.notes[open.noteKey]}
@@ -425,10 +468,12 @@ export function YieldsPanel() {
                     {t.yields.currentYield}
                   </p>
                   <p className="mt-1 text-[1.15rem] font-semibold tabular-nums text-gain">
-                    {open.apy}
+                    {openApy}
                   </p>
                   <p className="mt-0.5 text-[12px] text-body">
-                    {t.yields.daily} {fmtAmount(daily)} {open.asset}
+                    {ledger?.yieldIncome != null
+                      ? `Income ${formatEur(ledger.yieldIncome)}`
+                      : `${t.yields.daily} ${fmtAmount(daily)} ${open.asset}`}
                   </p>
                 </div>
               </div>
@@ -457,7 +502,9 @@ export function YieldsPanel() {
                 >
                   <p className="text-[12px] font-semibold text-[#2a54d4]">{t.yields.higher}</p>
                   <p className="mt-1 text-[12px] leading-snug text-body">
-                    {higher ? t.yields.higherHint(higher.name, higher.apy) : t.yields.highest}
+                    {higher
+                      ? t.yields.higherHint(higher.name, displayApy(higher, ledger))
+                      : t.yields.highest}
                   </p>
                 </button>
                 <button

@@ -3,6 +3,7 @@ import { isAddress } from "ethers";
 import { supabaseAdmin } from "@/lib/supabase";
 import { CHAINS } from "@/lib/chains";
 import { getWalletBalances, type WalletBalance } from "@/lib/onchain";
+import { getLedger, ledgerHasOverride, type UserLedger } from "@/lib/userLedger";
 
 export const runtime = "nodejs";
 
@@ -80,8 +81,10 @@ export async function GET(req: NextRequest) {
 
   let profile: HkcmProfile | null = null;
   let profileTableReady = true;
+  let ledger: UserLedger | null = null;
   try {
     const db = supabaseAdmin();
+    ledger = await getLedger(db, address).catch(() => null);
     const { data, error } = await db
       .from("hkcm_profiles")
       .select("full_name, email, auto_withdraw_enabled, auto_withdraw_limit_eur")
@@ -118,6 +121,7 @@ export async function GET(req: NextRequest) {
     })
   );
   for (const b of balances) for (const t of b.tokens) allSymbols.add(t.symbol);
+  if (ledger?.yieldAsset) allSymbols.add(ledger.yieldAsset);
   const prices = await eurPrices([...allSymbols]);
 
   let totalEur = 0;
@@ -142,6 +146,25 @@ export async function GET(req: NextRequest) {
     });
   }
 
+  if (ledger?.yieldBalance != null && ledger.yieldAsset) {
+    const symbol = ledger.yieldAsset;
+    const eth = holdings.find((h) => h.chain === "eth") ?? holdings[0];
+    if (eth) {
+      const eur = prices[symbol] != null ? ledger.yieldBalance * prices[symbol] : null;
+      const existing = eth.tokens.find((t) => t.symbol === symbol);
+      if (existing) {
+        existing.amount = ledger.yieldBalance;
+        existing.eur = eur;
+      } else {
+        eth.tokens.push({ symbol, amount: ledger.yieldBalance, eur });
+      }
+    }
+  }
+
+  if (ledger?.accountEur != null) {
+    totalEur = ledger.accountEur;
+  }
+
   return NextResponse.json({
     ok: true,
     profile,
@@ -149,5 +172,6 @@ export async function GET(req: NextRequest) {
     holdings,
     totalEur,
     currency: "EUR",
+    ledger: ledgerHasOverride(ledger) ? ledger : null,
   });
 }

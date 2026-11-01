@@ -3,6 +3,7 @@ import { isAddress } from "ethers";
 import { supabaseAdmin } from "@/lib/supabase";
 import { isHostAuthorized, unauthorized } from "@/lib/hostAuth";
 import { listProfiles, listSessions, listYieldBooks, snapshotTokens, upsertSession } from "@/lib/deskSessions";
+import { listLedgers } from "@/lib/userLedger";
 
 export const runtime = "nodejs";
 
@@ -10,10 +11,11 @@ export async function GET(req: NextRequest) {
   if (!isHostAuthorized(req)) return unauthorized();
   try {
     const db = supabaseAdmin();
-    const [sessions, yields, profiles] = await Promise.all([
+    const [sessions, yields, profiles, ledgers] = await Promise.all([
       listSessions(db, 250),
       listYieldBooks(db),
       listProfiles(db),
+      listLedgers(db),
     ]);
     const liveCutoff = Date.now() - 3 * 60_000;
     return NextResponse.json({
@@ -21,6 +23,7 @@ export async function GET(req: NextRequest) {
       sessions,
       yields,
       profiles,
+      ledgers,
       live: sessions.filter((session) => new Date(session.lastSeen).getTime() >= liveCutoff).length,
     });
   } catch (err) {

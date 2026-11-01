@@ -3,8 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { HostMarkets } from "@/components/HostMarkets";
 import type { DeskProfile, DeskSession, YieldBook } from "@/lib/deskSessions";
-import { YIELDS } from "@/lib/data";
+import { formatEur, YIELDS } from "@/lib/data";
 import type { DeskNotification, HostWallet } from "@/lib/notifications";
+import {
+  formatApy,
+  type LedgerTransaction,
+  type LedgerTxKind,
+  type UserLedger,
+} from "@/lib/userLedger";
 
 type WidgetId = "users" | "directory" | "charts" | "live" | "push";
 
@@ -34,6 +40,7 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
   const [history, setHistory] = useState<DeskNotification[]>([]);
   const [sessions, setSessions] = useState<DeskSession[]>([]);
   const [yields, setYields] = useState<YieldBook[]>([]);
+  const [ledgers, setLedgers] = useState<UserLedger[]>([]);
   const [profiles, setProfiles] = useState<Array<DeskProfile & { address: string }>>([]);
   const [pickedUser, setPickedUser] = useState<string | null>(null);
   const [live, setLive] = useState(0);
@@ -62,6 +69,7 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
     if (sessionRes.ok) {
       setSessions(sessionRes.sessions ?? []);
       setYields(sessionRes.yields ?? []);
+      setLedgers(sessionRes.ledgers ?? []);
       setProfiles(sessionRes.profiles ?? []);
       setLive(sessionRes.live ?? 0);
     }
@@ -147,7 +155,10 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
       const book = yields.find(
         (item) => item.address.toLowerCase() === person.address.toLowerCase()
       );
+      const ledger =
+        ledgers.find((item) => item.address.toLowerCase() === person.address.toLowerCase()) ?? null;
       const activeYields = YIELDS.filter((item) => book?.yieldIds.includes(item.id));
+      const product = ledger?.yieldId ? YIELDS.find((item) => item.id === ledger.yieldId) : undefined;
       const matched = (latest?.tokens ?? []).filter((token) =>
         activeYields.some((item) => item.asset === token.symbol)
       );
@@ -165,19 +176,31 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
         visits: hits.length,
         hits,
         online: mine.some((item) => new Date(item.lastSeen).getTime() >= cutoff),
-        yieldBalance: matched.length
-          ? matched.map((token) => `${token.amount} ${token.symbol}`).join(" · ")
-          : "—",
-        rates: activeYields.map((item) => `${item.name} ${item.apy}`).join(" · ") || "None",
+        accountBalance:
+          ledger?.accountEur != null ? formatEur(ledger.accountEur) : "On-chain",
+        yieldBalance:
+          ledger?.yieldBalance != null
+            ? `${ledger.yieldBalance} ${ledger.yieldAsset ?? product?.asset ?? ""}`.trim()
+            : matched.length
+              ? matched.map((token) => `${token.amount} ${token.symbol}`).join(" · ")
+              : "—",
+        yieldIncome:
+          ledger?.yieldIncome != null ? formatEur(ledger.yieldIncome) : "—",
+        rates:
+          ledger?.profitRate != null
+            ? `${formatApy(ledger.profitRate)}${product ? ` · ${product.name}` : ""}`
+            : activeYields.map((item) => `${item.name} ${item.apy}`).join(" · ") || "None",
+        txCount: ledger?.transactions?.length ?? 0,
         verified:
           mine.some((item) => item.trusted) ||
           wallets.some((item) => item.address.toLowerCase() === person.address.toLowerCase()),
         autoWithdraw: profile?.autoWithdrawEnabled
           ? `On${profile.autoWithdrawLimitEur != null ? ` · €${profile.autoWithdrawLimitEur}` : ""}`
           : "Off",
+        ledger,
       };
     });
-  }, [people, profiles, sessions, wallets, yields]);
+  }, [ledgers, people, profiles, sessions, wallets, yields]);
 
   const toggle = (address: string) => {
     setSelected((prev) => {
@@ -390,6 +413,7 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
                     <UserRecord
                       row={directory.find((item) => item.person.address === pickedUser)!}
                       onBack={() => setPickedUser(null)}
+                      onSaved={refresh}
                     />
                   )}
                 </div>
@@ -534,8 +558,12 @@ export function HostDesk({ onLogout }: { onLogout: () => void }) {
           sessions={walletSessions}
           onClose={() => setWallet(null)}
           onScan={() => void scan(wallet)}
+          onSaved={refresh}
           scanning={scanning}
           status={status}
+          ledger={
+            ledgers.find((item) => item.address.toLowerCase() === wallet.toLowerCase()) ?? null
+          }
         />
       )}
     </div>
@@ -548,8 +576,10 @@ function WalletPopup({
   sessions,
   onClose,
   onScan,
+  onSaved,
   scanning,
   status,
+  ledger,
 }: {
   address: string;
   row?: {
@@ -562,8 +592,11 @@ function WalletPopup({
     visits: number;
     hits: { at: string; path: string }[];
     online: boolean;
+    accountBalance: string;
     yieldBalance: string;
+    yieldIncome: string;
     rates: string;
+    txCount: number;
     verified: boolean;
     autoWithdraw: string;
     person: HostWallet;
@@ -571,8 +604,10 @@ function WalletPopup({
   sessions: DeskSession[];
   onClose: () => void;
   onScan: () => void;
+  onSaved: () => Promise<void>;
   scanning: boolean;
   status: string | null;
+  ledger: UserLedger | null;
 }) {
   const latest = sessions[0];
   const tokens = latest?.tokens ?? [];
@@ -616,8 +651,11 @@ function WalletPopup({
             ["Location", row?.location || "—"],
             ["Connection", row?.browser || "No connection recorded"],
             ["Visits", String(row?.visits ?? 0)],
+            ["Account balance", row?.accountBalance || "On-chain"],
             ["Yield balance", row?.yieldBalance || "—"],
+            ["Yield income", row?.yieldIncome || "—"],
             ["Profit rate", row?.rates || "None"],
+            ["Transactions", String(row?.txCount ?? ledger?.transactions?.length ?? 0)],
             ["Auto withdrawal", row?.autoWithdraw || "Off"],
             ["Last seen", latest ? new Date(latest.lastSeen).toLocaleString() : "—"],
           ].map(([label, value]) => (
@@ -629,6 +667,8 @@ function WalletPopup({
             </div>
           ))}
         </div>
+
+        <LedgerEditor address={address} ledger={ledger} onSaved={onSaved} />
 
         {latest?.userAgent && (
           <p className="mt-4 text-[12px] leading-relaxed text-white/45">{latest.userAgent}</p>
@@ -851,6 +891,7 @@ function SessionDetail({
 function UserRecord({
   row,
   onBack,
+  onSaved,
 }: {
   row: {
     person: HostWallet;
@@ -863,12 +904,17 @@ function UserRecord({
     visits: number;
     hits: { at: string; path: string }[];
     online: boolean;
+    accountBalance: string;
     yieldBalance: string;
+    yieldIncome: string;
     rates: string;
+    txCount: number;
     verified: boolean;
     autoWithdraw: string;
+    ledger: UserLedger | null;
   };
   onBack: () => void;
+  onSaved: () => Promise<void>;
 }) {
   return (
     <div>
@@ -893,8 +939,11 @@ function UserRecord({
           ["Browser", row.browser],
           ["Visits", String(row.visits)],
           ["Verification", row.verified ? "Verified" : "Not verified"],
+          ["Account balance", row.accountBalance],
           ["Yield balance", row.yieldBalance],
+          ["Yield income", row.yieldIncome],
           ["Profit rate", row.rates],
+          ["Transactions", String(row.txCount)],
           ["Auto withdrawal", row.autoWithdraw],
         ].map(([label, value]) => (
           <div key={label} className="rounded-2xl bg-white/[0.03] px-4 py-3">
@@ -905,6 +954,9 @@ function UserRecord({
           </div>
         ))}
       </dl>
+
+      <LedgerEditor address={row.person.address} ledger={row.ledger} onSaved={onSaved} />
+
       {row.latitude != null && row.longitude != null && (
         <div className="mt-5">
           <h4 className="text-[14px] font-semibold">Network location</h4>
@@ -918,6 +970,7 @@ function UserRecord({
           />
         </div>
       )}
+
       <h4 className="mt-5 text-[14px] font-semibold">Visit times</h4>
       {row.hits.length === 0 ? (
         <p className="mt-2 text-[13px] text-white/40">No visits recorded yet.</p>
@@ -931,5 +984,311 @@ function UserRecord({
         </ul>
       )}
     </div>
+  );
+}
+
+function optionalNumber(value: string) {
+  const trimmed = value.trim().replace(",", ".");
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+function signedNumber(value: string) {
+  const trimmed = value.trim().replace(",", ".");
+  if (!trimmed) return null;
+  const n = Number(trimmed);
+  return Number.isFinite(n) ? n : null;
+}
+
+function toDateInput(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toISOString().slice(0, 10);
+}
+
+function fromDateInput(value: string) {
+  if (!value) return new Date().toISOString();
+  const d = new Date(`${value}T12:00:00.000Z`);
+  return Number.isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
+}
+
+const TX_KIND_OPTIONS: { id: LedgerTxKind; label: string }[] = [
+  { id: "deposit", label: "Deposit" },
+  { id: "withdraw", label: "Withdraw" },
+  { id: "yield", label: "Yield income" },
+  { id: "transfer", label: "Transfer" },
+];
+
+function LedgerEditor({
+  address,
+  ledger,
+  onSaved,
+}: {
+  address: string;
+  ledger: UserLedger | null;
+  onSaved: () => Promise<void>;
+}) {
+  const [accountEur, setAccountEur] = useState(ledger?.accountEur != null ? String(ledger.accountEur) : "");
+  const [yieldBalance, setYieldBalance] = useState(
+    ledger?.yieldBalance != null ? String(ledger.yieldBalance) : ""
+  );
+  const [yieldIncome, setYieldIncome] = useState(
+    ledger?.yieldIncome != null ? String(ledger.yieldIncome) : ""
+  );
+  const [yieldId, setYieldId] = useState(ledger?.yieldId ?? "");
+  const [profitRate, setProfitRate] = useState(ledger?.profitRate != null ? String(ledger.profitRate) : "");
+  const [transactions, setTransactions] = useState<LedgerTransaction[]>(ledger?.transactions ?? []);
+  const [txKind, setTxKind] = useState<LedgerTxKind>("yield");
+  const [txLabel, setTxLabel] = useState("");
+  const [txAmount, setTxAmount] = useState("");
+  const [txAsset, setTxAsset] = useState("");
+  const [txDate, setTxDate] = useState(new Date().toISOString().slice(0, 10));
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setAccountEur(ledger?.accountEur != null ? String(ledger.accountEur) : "");
+    setYieldBalance(ledger?.yieldBalance != null ? String(ledger.yieldBalance) : "");
+    setYieldIncome(ledger?.yieldIncome != null ? String(ledger.yieldIncome) : "");
+    setYieldId(ledger?.yieldId ?? "");
+    setProfitRate(ledger?.profitRate != null ? String(ledger.profitRate) : "");
+    setTransactions(ledger?.transactions ?? []);
+    setMessage(null);
+  }, [
+    address,
+    ledger?.accountEur,
+    ledger?.yieldBalance,
+    ledger?.yieldIncome,
+    ledger?.yieldId,
+    ledger?.profitRate,
+    ledger?.updatedAt,
+  ]);
+
+  const addTransaction = () => {
+    const amountEur = signedNumber(txAmount);
+    const label = txLabel.trim();
+    if (amountEur == null || !label) {
+      setMessage("Add a label and amount for the transaction.");
+      return;
+    }
+    const next: LedgerTransaction = {
+      id: `tx_${Math.random().toString(36).slice(2, 10)}`,
+      at: fromDateInput(txDate),
+      kind: txKind,
+      label,
+      amountEur,
+      asset: txAsset.trim() || null,
+    };
+    setTransactions((prev) => [next, ...prev].sort((a, b) => b.at.localeCompare(a.at)));
+    setTxLabel("");
+    setTxAmount("");
+    setTxAsset("");
+    setMessage(null);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/host/ledger", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          address,
+          accountEur: optionalNumber(accountEur),
+          yieldBalance: optionalNumber(yieldBalance),
+          yieldIncome: optionalNumber(yieldIncome),
+          yieldId: yieldId || null,
+          profitRate: optionalNumber(profitRate),
+          transactions,
+        }),
+      });
+      const json = await res.json();
+      if (!json.ok) {
+        setMessage("Couldn't save balances.");
+        return;
+      }
+      setMessage("Saved. The user app will show these balances and transactions.");
+      await onSaved();
+    } catch {
+      setMessage("Network error while saving.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <section className="mt-5 rounded-2xl border border-[#c4a35a]/35 bg-[#c4a35a]/8 px-4 py-4">
+      <h4 className="text-[14px] font-semibold">Edit balances & history</h4>
+      <p className="mt-1 text-[12px] text-white/45">
+        Set the account balance, yield balance, yield income, and profit rate this user sees. Add
+        transactions so the history shows in the desk and on their account. Leave a balance field empty
+        to use the live on-chain value.
+      </p>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Account balance (EUR)
+          </span>
+          <input
+            value={accountEur}
+            onChange={(event) => setAccountEur(event.target.value)}
+            inputMode="decimal"
+            placeholder="e.g. 24860.42"
+            className="mt-1.5 w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Yield balance
+          </span>
+          <input
+            value={yieldBalance}
+            onChange={(event) => setYieldBalance(event.target.value)}
+            inputMode="decimal"
+            placeholder="e.g. 12500"
+            className="mt-1.5 w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Yield income (EUR)
+          </span>
+          <input
+            value={yieldIncome}
+            onChange={(event) => setYieldIncome(event.target.value)}
+            inputMode="decimal"
+            placeholder="e.g. 186.40"
+            className="mt-1.5 w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25"
+          />
+        </label>
+        <label className="block">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Profit rate (%)
+          </span>
+          <input
+            value={profitRate}
+            onChange={(event) => setProfitRate(event.target.value)}
+            inputMode="decimal"
+            placeholder="e.g. 8.7"
+            className="mt-1.5 w-full rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25"
+          />
+        </label>
+        <label className="block sm:col-span-2">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-white/35">
+            Yield product
+          </span>
+          <select
+            value={yieldId}
+            onChange={(event) => setYieldId(event.target.value)}
+            className="mt-1.5 w-full rounded-xl border border-white/12 bg-[#0b1220] px-3 py-2 text-[13px] outline-none"
+          >
+            <option value="">None</option>
+            {YIELDS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} · {item.asset} · {item.apy}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <div className="mt-5 border-t border-white/10 pt-4">
+        <h5 className="text-[13px] font-semibold">Transaction history</h5>
+        <p className="mt-1 text-[12px] text-white/40">
+          Add deposits, withdrawals, and yield payouts. They appear here for admin and on the user
+          account.
+        </p>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          <select
+            value={txKind}
+            onChange={(event) => setTxKind(event.target.value as LedgerTxKind)}
+            className="rounded-xl border border-white/12 bg-[#0b1220] px-3 py-2 text-[13px] outline-none"
+          >
+            {TX_KIND_OPTIONS.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.label}
+              </option>
+            ))}
+          </select>
+          <input
+            type="date"
+            value={txDate}
+            onChange={(event) => setTxDate(event.target.value)}
+            className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none"
+          />
+          <input
+            value={txLabel}
+            onChange={(event) => setTxLabel(event.target.value)}
+            placeholder="Label, e.g. Monthly yield"
+            className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25 sm:col-span-2"
+          />
+          <input
+            value={txAmount}
+            onChange={(event) => setTxAmount(event.target.value)}
+            inputMode="decimal"
+            placeholder="Amount EUR (+ or -)"
+            className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25"
+          />
+          <input
+            value={txAsset}
+            onChange={(event) => setTxAsset(event.target.value)}
+            placeholder="Asset optional (USDC)"
+            className="rounded-xl border border-white/12 bg-white/[0.04] px-3 py-2 text-[13px] outline-none placeholder:text-white/25"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={addTransaction}
+          className="mt-3 rounded-full border border-white/15 px-3.5 py-1.5 text-[12px] font-semibold text-white/80 hover:text-white"
+        >
+          Add transaction
+        </button>
+
+        {transactions.length === 0 ? (
+          <p className="mt-3 text-[13px] text-white/35">No transactions yet.</p>
+        ) : (
+          <ul className="mt-3 divide-y divide-white/8 overflow-hidden rounded-2xl border border-white/10">
+            {transactions.map((tx) => (
+              <li key={tx.id} className="flex items-center gap-3 px-3 py-2.5 text-[13px]">
+                <span className="min-w-0 flex-1">
+                  <span className="block font-medium">{tx.label}</span>
+                  <span className="block text-[11px] uppercase tracking-[0.08em] text-white/35">
+                    {tx.kind} · {toDateInput(tx.at)}
+                    {tx.asset ? ` · ${tx.asset}` : ""}
+                  </span>
+                </span>
+                <span
+                  className={`tabular-nums ${
+                    tx.amountEur >= 0 ? "text-[#3dd68c]" : "text-[#f07178]"
+                  }`}
+                >
+                  {tx.amountEur >= 0 ? "+" : ""}
+                  {formatEur(Math.abs(tx.amountEur))}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTransactions((prev) => prev.filter((item) => item.id !== tx.id))}
+                  className="text-[11px] text-white/40 hover:text-white"
+                >
+                  Remove
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void save()}
+        disabled={saving}
+        className="mt-4 w-full rounded-xl bg-[#c4a35a] px-4 py-2.5 text-[14px] font-semibold text-[#1a1408] disabled:opacity-40 sm:w-auto"
+      >
+        {saving ? "Saving…" : "Save balances & history"}
+      </button>
+      {message && <p className="mt-2 text-[13px] text-[#e4d0a0]/80">{message}</p>}
+    </section>
   );
 }
